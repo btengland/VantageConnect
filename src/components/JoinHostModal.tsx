@@ -1,3 +1,4 @@
+// JoinHostModal.tsx
 import React, { useState } from 'react';
 import {
   Modal,
@@ -7,6 +8,7 @@ import {
   StyleSheet,
   TextInput,
 } from 'react-native';
+import { SharedStyles } from './SharedStyles';
 
 type JoinHostModalProps = {
   isOpen: boolean;
@@ -28,8 +30,8 @@ const JoinHostModal: React.FC<JoinHostModalProps> = ({
       visible={isOpen}
       onRequestClose={() => toggleModal('')}
     >
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
+      <View style={[SharedStyles.flexCenter, SharedStyles.dimBackground]}>
+        <View style={SharedStyles.modalView}>
           <Text style={styles.modalText}>
             {buttonPressed === 'join' ? 'Join' : 'Host'} a Game
           </Text>
@@ -45,7 +47,7 @@ const JoinHostModal: React.FC<JoinHostModalProps> = ({
             />
           )}
 
-          <View style={styles.buttonContainer}>
+          <View style={SharedStyles.buttonContainer}>
             <Pressable style={styles.button} onPress={() => toggleModal('')}>
               <Text style={styles.textStyle}>Close</Text>
             </Pressable>
@@ -66,24 +68,10 @@ const JoinHostModal: React.FC<JoinHostModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  centeredView: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: 300,
+  modalText: {
+    fontSize: 18,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   textInput: {
     width: '100%',
@@ -96,10 +84,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     marginBottom: 20,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    marginTop: 15,
-  },
   button: {
     backgroundColor: '#2196F3',
     borderRadius: 10,
@@ -111,11 +95,6 @@ const styles = StyleSheet.create({
   textStyle: {
     color: 'white',
     fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 15,
     textAlign: 'center',
   },
 });

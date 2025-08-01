@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import ExitModal from './components/ExitModal';
 
 const GamePage = () => {
+  const [isOpen, setOpen] = useState(false);
+
+  const navigation = useNavigation();
+
+  const toggleModal = (navigate?: boolean) => {
+    if (navigate) {
+      (navigation as any).navigate('Home');
+    }
+    setOpen(!isOpen);
+  };
+
   return (
     <View style={styles.container}>
       {/* Main Game Content */}
@@ -11,10 +24,12 @@ const GamePage = () => {
 
       {/* Floating Bubbles Nav */}
       <View style={styles.sidebar}>
-        <Pressable style={styles.bubble}>
+        <Pressable onPress={() => toggleModal(false)} style={styles.bubble}>
           <Text style={styles.bubbleText}>X</Text>
         </Pressable>
       </View>
+
+      <ExitModal isOpen={isOpen} toggleModal={toggleModal} />
     </View>
   );
 };
