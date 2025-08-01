@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import ExitModal from './components/ExitModal';
+import { StatusBar, useColorScheme } from 'react-native';
 
 const GamePage = () => {
   const [isOpen, setOpen] = useState(false);
+
+  const isDarkMode = useColorScheme() === 'dark';
 
   const navigation = useNavigation();
 
@@ -17,6 +20,7 @@ const GamePage = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       {/* Main Game Content */}
       <View style={styles.main}>
         <Text style={styles.mainText}>Game Content Here</Text>

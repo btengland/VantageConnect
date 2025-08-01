@@ -8,12 +8,15 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import JoinHostModal from './components/JoinHostModal';
+import { StatusBar, useColorScheme } from 'react-native';
 
 const HomePage = () => {
   const [isOpen, setOpen] = useState(false);
   const [buttonPressed, setButtonPressed] = useState('');
 
   const navigation = useNavigation();
+
+  const isDarkMode = useColorScheme() === 'light';
 
   const toggleModal = (type: string, navigate?: boolean) => {
     setButtonPressed(type);
@@ -33,6 +36,8 @@ const HomePage = () => {
       style={styles.background}
       resizeMode="cover"
     >
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+
       <View>
         <Text style={styles.title}>Vantage Connect</Text>
 
