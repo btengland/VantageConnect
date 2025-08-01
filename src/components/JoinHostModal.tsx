@@ -16,11 +16,11 @@ type JoinHostModalProps = {
   buttonPressed: string;
 };
 
-const JoinHostModal: React.FC<JoinHostModalProps> = ({
+const JoinHostModal = ({
   isOpen,
   toggleModal,
   buttonPressed,
-}) => {
+}: JoinHostModalProps) => {
   const [text, setText] = useState('');
 
   return (

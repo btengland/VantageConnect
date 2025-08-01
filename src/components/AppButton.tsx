@@ -6,7 +6,7 @@ type AppButtonProps = {
   onPress: () => void;
 };
 
-const AppButton: React.FC<AppButtonProps> = ({ title, onPress }) => (
+const AppButton = ({ title, onPress }: AppButtonProps) => (
   <Pressable style={styles.button} onPress={onPress}>
     <Text style={styles.text}>{title}</Text>
   </Pressable>

@@ -3,9 +3,30 @@ import { useNavigation } from '@react-navigation/native';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
+import PlayerCard from './components/PlayerCard';
 
 const GamePage = () => {
   const [isOpen, setOpen] = useState(false);
+  const [challengeDice, setChallengeDice] = useState(0);
+  const [viewedPlayer, setViewedPlayer] = useState(0);
+  const [playerInfo, setPlayerInfo] = useState([
+    {
+      id: 0,
+      name: 'John',
+      character: 'Engineer',
+      escapePod: 'Delta',
+      location: '123',
+      isTurn: true,
+    },
+    {
+      id: 1,
+      name: 'Richard',
+      character: 'Engineer',
+      escapePod: 'Delta',
+      location: '123',
+      isTurn: true,
+    },
+  ]);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -21,16 +42,56 @@ const GamePage = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      {/* Main Game Content */}
-      <View style={styles.main}>
-        <Text style={styles.mainText}>Game Content Here</Text>
-      </View>
 
-      {/* Floating Bubbles Nav */}
-      <View style={styles.sidebar}>
-        <Pressable onPress={() => toggleModal(false)} style={styles.bubble}>
-          <Text style={styles.bubbleText}>X</Text>
-        </Pressable>
+      <View style={styles.main}>
+        {/* Header */}
+        <View style={styles.diceContainer}>
+          <Text style={styles.mainText}>Available Challenge Dice:</Text>
+          <View style={styles.diceControl}>
+            <Pressable
+              onPress={() => setChallengeDice(prev => Math.max(0, prev - 1))}
+              style={styles.diceButton}
+            >
+              <Text style={styles.diceButtonText}>−</Text>
+            </Pressable>
+
+            <Text style={styles.diceValue}>{challengeDice}</Text>
+
+            <Pressable
+              onPress={() => setChallengeDice(prev => prev + 1)}
+              style={styles.diceButton}
+            >
+              <Text style={styles.diceButtonText}>+</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.contentContainer}>
+          {/* Sidebar */}
+          <View style={styles.sidebar}>
+            {playerInfo.map(player => (
+              <View style={styles.innerSidebar}>
+                <Pressable
+                  key={player.id}
+                  onPress={() => setViewedPlayer(player.id)}
+                  style={styles.bubble}
+                >
+                  <Text style={styles.bubbleText}>
+                    {player.name?.trim()?.charAt(0)?.toUpperCase() || '?'}
+                  </Text>
+                </Pressable>
+                {player.id === viewedPlayer && <View style={styles.triangle} />}
+              </View>
+            ))}
+
+            <Pressable onPress={() => toggleModal(false)} style={styles.bubble}>
+              <Text style={styles.bubbleText}>X</Text>
+            </Pressable>
+          </View>
+
+          {/* Player Card */}
+          <PlayerCard player={playerInfo[viewedPlayer]} />
+        </View>
       </View>
 
       <ExitModal isOpen={isOpen} toggleModal={toggleModal} />
@@ -41,21 +102,29 @@ const GamePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'lightgray',
+    paddingTop: 50,
+    paddingLeft: 20,
   },
   main: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  diceContainer: {
     alignItems: 'center',
   },
   mainText: {
     fontSize: 24,
   },
+  contentContainer: {
+    flexDirection: 'row',
+  },
   sidebar: {
-    position: 'absolute',
-    left: 10,
-    top: 60,
     zIndex: 100,
     gap: 10,
+  },
+  innerSidebar: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   bubble: {
     width: 50,
@@ -73,6 +142,40 @@ const styles = StyleSheet.create({
   bubbleText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  diceControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    gap: 20,
+  },
+  diceButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  diceButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  diceValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  triangle: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 10,
+    borderBottomWidth: 10,
+    borderRightWidth: 15,
+    marginRight: -2,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: 'white',
   },
 });
 

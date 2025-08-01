@@ -8,12 +8,9 @@ type BaseModalProps = {
   children: React.ReactNode;
 };
 
-const BaseModal: React.FC<BaseModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-}) => {
+const BaseModal = ({ isOpen, onClose, title, children }: BaseModalProps) => {
+  // component logic
+
   return (
     <Modal
       animationType="slide"

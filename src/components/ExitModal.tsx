@@ -9,7 +9,7 @@ type ExitModalProps = {
   toggleModal: (navigate?: boolean) => void;
 };
 
-const ExitModal: React.FC<ExitModalProps> = ({ isOpen, toggleModal }) => {
+const ExitModal = ({ isOpen, toggleModal }: ExitModalProps) => {
   return (
     <BaseModal
       isOpen={isOpen}
