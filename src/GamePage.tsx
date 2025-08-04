@@ -4,27 +4,70 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from './components/PlayerCard';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const GamePage = () => {
+  const Move = require('./assets/Move.png');
+  const Look = require('./assets/Look.png');
+  const Engage = require('./assets/Engage.png');
+  const Help = require('./assets/Help.png');
+  const Take = require('./assets/Take.png');
+  const Overpower = require('./assets/Overpower.png');
+
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState(0);
+  const [playerTurn, setPlayerTurn] = useState(0);
   const [playerInfo, setPlayerInfo] = useState([
     {
       id: 0,
       name: 'John',
-      character: 'Engineer',
+      character: 'Jules',
       escapePod: 'Delta',
       location: '123',
-      isTurn: true,
+      skillTokens: [
+        { icon: Move, quantity: 0 },
+        { icon: Look, quantity: 0 },
+        { icon: Engage, quantity: 0 },
+        { icon: Help, quantity: 0 },
+        { icon: Take, quantity: 0 },
+        { icon: Overpower, quantity: 0 },
+      ],
     },
     {
       id: 1,
       name: 'Richard',
-      character: 'Engineer',
+      character: 'Tina',
       escapePod: 'Delta',
       location: '123',
-      isTurn: true,
+    },
+    {
+      id: 2,
+      name: 'Richard',
+      character: 'Ariel',
+      escapePod: 'Delta',
+      location: '123',
+    },
+    {
+      id: 3,
+      name: 'Richard',
+      character: 'Emilien',
+      escapePod: 'Delta',
+      location: '123',
+    },
+    {
+      id: 4,
+      name: 'Richard',
+      character: 'Ira',
+      escapePod: 'Delta',
+      location: '123',
+    },
+    {
+      id: 5,
+      name: 'Richard',
+      character: 'Soren',
+      escapePod: 'Delta',
+      location: '123',
     },
   ]);
 
@@ -39,13 +82,54 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
+  const updatePlayerField = (id: number, field: string, value: string) => {
+    setPlayerInfo(prev =>
+      prev.map(player =>
+        player.id === id ? { ...player, [field]: value } : player,
+      ),
+    );
+  };
+
+  const characterThemes: { [key: string]: string } = {
+    jules: '#23b0de',
+    captain: '#23b0de',
+    tina: '#dc2a27',
+    marine: '#dc2a27',
+    ariel: '#fdd627',
+    engineer: '#fdd627',
+    emilien: '#f48c26',
+    scholar: '#f48c26',
+    ira: '#19a557',
+    medic: '#19a557',
+    soren: '#794c9f',
+    navigator: '#794c9f',
+  };
+
+  const getCharacterColor = (characterText: string): string => {
+    const lowerText = characterText.toLowerCase();
+    for (const key in characterThemes) {
+      if (lowerText.includes(key)) {
+        return characterThemes[key];
+      }
+    }
+    return 'darkgray';
+  };
+
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
       <View style={styles.main}>
+        {/* Close button top-right */}
+        <Pressable
+          onPress={() => toggleModal(false)}
+          style={styles.closeButton}
+        >
+          <Text style={styles.closeButtonText}>×</Text>
+        </Pressable>
+
         {/* Header */}
-        <View style={styles.diceContainer}>
+        <View>
           <Text style={styles.mainText}>Available Challenge Dice:</Text>
           <View style={styles.diceControl}>
             <Pressable
@@ -67,63 +151,77 @@ const GamePage = () => {
         </View>
 
         <View style={styles.contentContainer}>
-          {/* Sidebar */}
+          {/* Bubbles on top */}
           <View style={styles.sidebar}>
             {playerInfo.map(player => (
-              <View style={styles.innerSidebar}>
+              <View key={player.id} style={styles.innerSidebar}>
                 <Pressable
-                  key={player.id}
                   onPress={() => setViewedPlayer(player.id)}
-                  style={styles.bubble}
+                  style={[
+                    styles.bubble,
+                    { backgroundColor: getCharacterColor(player.character) },
+                  ]}
                 >
                   <Text style={styles.bubbleText}>
                     {player.name?.trim()?.charAt(0)?.toUpperCase() || '?'}
                   </Text>
                 </Pressable>
-                {player.id === viewedPlayer && <View style={styles.triangle} />}
+                {player.id === viewedPlayer && (
+                  <View
+                    style={[
+                      styles.triangle,
+                      { borderTopColor: getCharacterColor(player.character) },
+                    ]}
+                  />
+                )}
               </View>
             ))}
-
-            <Pressable onPress={() => toggleModal(false)} style={styles.bubble}>
-              <Text style={styles.bubbleText}>X</Text>
-            </Pressable>
           </View>
 
           {/* Player Card */}
-          <PlayerCard player={playerInfo[viewedPlayer]} />
+          <PlayerCard
+            player={playerInfo[viewedPlayer]}
+            playerTurn={playerTurn}
+            setPlayerTurn={setPlayerTurn}
+            totalPlayers={playerInfo.length}
+            currentTurnPlayerName={playerInfo[playerTurn]?.name || 'Unknown'}
+            updatePlayerField={updatePlayerField}
+            getCharacterColor={getCharacterColor}
+          />
         </View>
       </View>
 
       <ExitModal isOpen={isOpen} toggleModal={toggleModal} />
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'lightgray',
+    backgroundColor: '#a0c8f0',
     paddingTop: 50,
     paddingLeft: 20,
   },
   main: {
     flex: 1,
   },
-  diceContainer: {
-    alignItems: 'center',
-  },
   mainText: {
     fontSize: 24,
   },
   contentContainer: {
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
   },
   sidebar: {
-    zIndex: 100,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: 10,
+    zIndex: 100,
+    marginTop: 10,
   },
   innerSidebar: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
   bubble: {
@@ -169,13 +267,35 @@ const styles = StyleSheet.create({
   triangle: {
     width: 0,
     height: 0,
-    borderTopWidth: 10,
-    borderBottomWidth: 10,
-    borderRightWidth: 15,
-    marginRight: -2,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderRightColor: 'white',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 15,
+    marginTop: -2,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10, // bring it down inside the container a bit
+    right: 10, // aligned to the right edge
+    width: 40,
+    height: 40,
+    borderRadius: 20, // circular button
+    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent dark bg to stand out
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 200,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+
+  closeButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    lineHeight: 20,
   },
 });
 

@@ -1,70 +1,136 @@
 // src/components/PlayerCard.tsx
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { SharedStyles } from './SharedStyles';
+import { TextInput } from 'react-native';
 
-type PlayerInfo = {
+type Player = {
   id: number;
   name: string;
-  character?: string;
-  escapePod?: string;
-  location?: string;
-  isTurn?: boolean;
+  character: string;
+  escapePod: string;
+  location: string;
 };
 
-const PlayerCard = ({ player }: { player: PlayerInfo }) => {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.sectionHeader}>First Player</Text>
+type PlayerCardProps = {
+  player: Player;
+  playerTurn: number;
+  setPlayerTurn: React.Dispatch<React.SetStateAction<number>>;
+  totalPlayers: number;
+  currentTurnPlayerName: string;
+  updatePlayerField: (id: number, field: string, value: string) => void;
+  getCharacterColor: (characterText: string) => string;
+};
 
+function PlayerCard(props: PlayerCardProps) {
+  const {
+    player,
+    playerTurn,
+    setPlayerTurn,
+    totalPlayers,
+    currentTurnPlayerName,
+    updatePlayerField,
+    getCharacterColor,
+  } = props;
+
+  const handleEndTurn = () => {
+    setPlayerTurn(prev => (prev + 1) % totalPlayers);
+  };
+
+  const getOrdinal = (n: number) => {
+    const suffixes = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return `${n}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]}`;
+  };
+
+  return (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: getCharacterColor(player.character) },
+      ]}
+    >
+      <Text style={styles.sectionHeader}>
+        {getOrdinal(player.id + 1)} Player
+      </Text>
       <View style={styles.row}>
         <Text style={styles.label}>Player Name:</Text>
-        <Text style={styles.value}>{player.name || '—'}</Text>
+        <TextInput
+          style={styles.value}
+          value={player.name}
+          onChangeText={text => updatePlayerField(player.id, 'name', text)}
+        />
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Character:</Text>
-        <Text style={styles.value}>{player.character || '—'}</Text>
+        <TextInput
+          style={styles.value}
+          value={player.character}
+          onChangeText={text => updatePlayerField(player.id, 'character', text)}
+        />
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Escape Pod:</Text>
-        <Text style={styles.value}>{player.escapePod || '—'}</Text>
+        <TextInput
+          style={styles.value}
+          value={player.escapePod}
+          onChangeText={text => updatePlayerField(player.id, 'escapePod', text)}
+        />
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Current Location:</Text>
-        <Text style={styles.value}>{player.location || '000'}</Text>
+        <TextInput
+          keyboardType="number-pad"
+          maxLength={3}
+          style={styles.locationInput}
+          value={player.location}
+          onChangeText={text => updatePlayerField(player.id, 'location', text)}
+        />
       </View>
 
-      <Text style={styles.subHeader}>Current Action</Text>
       <View style={styles.buttonContainer}>
-        <Text style={styles.turnButton}>
-          {player.isTurn ? "it's my turn" : '—'}
-        </Text>
-      </View>
+        <Text style={styles.subHeader}>Current Action</Text>
+        <View
+          style={[
+            styles.turnTextContainer,
+            playerTurn === player.id && styles.myTurnBackground,
+          ]}
+        >
+          <Text style={styles.turnText}>
+            {playerTurn === player.id
+              ? "It's your turn"
+              : `It's ${currentTurnPlayerName}${
+                  currentTurnPlayerName.endsWith('s') ? "'" : "'s"
+                } turn`}
+          </Text>
+        </View>
 
+        {playerTurn === player.id && (
+          <Pressable onPress={handleEndTurn}>
+            <Text style={SharedStyles.button}>Done</Text>
+          </Pressable>
+        )}
+      </View>
       <Text style={styles.subHeader}>Skill Tokens</Text>
       <View style={styles.grid} />
-
       <Text style={styles.subHeader}>Impact Dice Slots in Card Grid</Text>
       <View style={styles.grid} />
-
       <Text style={styles.subHeader}>Status Updates</Text>
       <View style={styles.statusBox} />
-
       <Text style={styles.subHeader}>Journal</Text>
       <View style={styles.journalBox} />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
     padding: 10,
+    borderRadius: 10,
     backgroundColor: 'white',
   },
   sectionHeader: {
@@ -76,8 +142,12 @@ const styles = StyleSheet.create({
   subHeader: {
     fontWeight: 'bold',
     textAlign: 'center',
+    textDecorationLine: 'underline',
     marginTop: 10,
     marginBottom: 6,
+  },
+  myTurnBackground: {
+    backgroundColor: '#a5f0a8',
   },
   row: {
     flexDirection: 'row',
@@ -93,19 +163,35 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    textAlign: 'right',
+  },
+  locationInput: {
+    alignItems: 'center',
+    width: 100,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     alignItems: 'center',
     marginVertical: 4,
   },
-  turnButton: {
-    backgroundColor: '#5b4025',
-    color: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    borderRadius: 10,
+  turnTextContainer: {
+    backgroundColor: '#f0f4f8', // subtle light background
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    alignSelf: 'center', // centers container horizontally
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2, // for Android shadow
+    minWidth: '60%', // or fixed width like 200
+  },
+  turnText: {
     fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
   },
   grid: {
     height: 80,

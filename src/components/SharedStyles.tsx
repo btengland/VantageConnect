@@ -22,6 +22,15 @@ export const SharedStyles = StyleSheet.create({
     elevation: 5,
     width: 300,
   },
+  button: {
+    backgroundColor: '#2196F3',
+    color: 'white',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 8,
+    elevation: 2,
+  },
   buttonContainer: {
     flexDirection: 'row',
     marginTop: 15,
