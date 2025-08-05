@@ -129,7 +129,7 @@ function PlayerCard(props: PlayerCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 10,
+    padding: 24,
     borderRadius: 10,
     backgroundColor: 'white',
   },

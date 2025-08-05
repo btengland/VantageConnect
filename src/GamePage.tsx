@@ -90,7 +90,7 @@ const GamePage = () => {
     );
   };
 
-  const characterThemes: { [key: string]: string } = {
+  const bubbleColors: { [key: string]: string } = {
     jules: '#23b0de',
     captain: '#23b0de',
     tina: '#dc2a27',
@@ -105,11 +105,36 @@ const GamePage = () => {
     navigator: '#794c9f',
   };
 
+  const characterColor: { [key: string]: string } = {
+    jules: '#74cbea',
+    captain: '#74cbea',
+    tina: '#ef6c6a',
+    marine: '#ef6c6a',
+    ariel: '#fee866',
+    engineer: '#fee866',
+    emilien: '#fbb26e',
+    scholar: '#fbb26e',
+    ira: '#5ecf90',
+    medic: '#5ecf90',
+    soren: '#a181c0',
+    navigator: '#a181c0',
+  };
+
+  const getBubbleColor = (characterText: string): string => {
+    const lowerText = characterText.toLowerCase();
+    for (const key in bubbleColors) {
+      if (lowerText.includes(key)) {
+        return bubbleColors[key];
+      }
+    }
+    return 'darkgray';
+  };
+
   const getCharacterColor = (characterText: string): string => {
     const lowerText = characterText.toLowerCase();
-    for (const key in characterThemes) {
+    for (const key in characterColor) {
       if (lowerText.includes(key)) {
-        return characterThemes[key];
+        return characterColor[key];
       }
     }
     return 'darkgray';
@@ -159,7 +184,7 @@ const GamePage = () => {
                   onPress={() => setViewedPlayer(player.id)}
                   style={[
                     styles.bubble,
-                    { backgroundColor: getCharacterColor(player.character) },
+                    { backgroundColor: getBubbleColor(player.character) },
                   ]}
                 >
                   <Text style={styles.bubbleText}>
@@ -170,7 +195,7 @@ const GamePage = () => {
                   <View
                     style={[
                       styles.triangle,
-                      { borderTopColor: getCharacterColor(player.character) },
+                      { borderTopColor: getBubbleColor(player.character) },
                     ]}
                   />
                 )}
@@ -201,7 +226,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#a0c8f0',
     paddingTop: 50,
-    paddingLeft: 20,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 16,
   },
   main: {
     flex: 1,
