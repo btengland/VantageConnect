@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, StyleSheet, Text } from 'react-native';
+import { Modal, View, StyleSheet } from 'react-native';
+import CustomText from './CustomText'; // Adjust the path if needed
 
 type BaseModalProps = {
   isOpen: boolean;
@@ -9,8 +10,6 @@ type BaseModalProps = {
 };
 
 const BaseModal = ({ isOpen, onClose, title, children }: BaseModalProps) => {
-  // component logic
-
   return (
     <Modal
       animationType="slide"
@@ -20,7 +19,9 @@ const BaseModal = ({ isOpen, onClose, title, children }: BaseModalProps) => {
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
-          <Text style={styles.modalText}>{title}</Text>
+          <CustomText style={styles.modalText} bold>
+            {title}
+          </CustomText>
           {children}
         </View>
       </View>

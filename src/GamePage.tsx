@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
+
+import CustomText from './components/CustomText'; // <-- import your CustomText here
 
 const GamePage = () => {
   const Move = require('./assets/Move.png');
@@ -150,27 +152,27 @@ const GamePage = () => {
           onPress={() => toggleModal(false)}
           style={styles.closeButton}
         >
-          <Text style={styles.closeButtonText}>×</Text>
+          <CustomText style={styles.closeButtonText}>X</CustomText>
         </Pressable>
 
         {/* Header */}
-        <View>
-          <Text style={styles.mainText}>Available Challenge Dice:</Text>
+        <View style={styles.diceContainer}>
+          <CustomText style={styles.mainText}>Available Dice:</CustomText>
           <View style={styles.diceControl}>
             <Pressable
               onPress={() => setChallengeDice(prev => Math.max(0, prev - 1))}
               style={styles.diceButton}
             >
-              <Text style={styles.diceButtonText}>−</Text>
+              <CustomText style={styles.diceButtonText}>-</CustomText>
             </Pressable>
 
-            <Text style={styles.diceValue}>{challengeDice}</Text>
+            <CustomText style={styles.diceValue}>{challengeDice}</CustomText>
 
             <Pressable
               onPress={() => setChallengeDice(prev => prev + 1)}
               style={styles.diceButton}
             >
-              <Text style={styles.diceButtonText}>+</Text>
+              <CustomText style={styles.diceButtonText}>+</CustomText>
             </Pressable>
           </View>
         </View>
@@ -187,9 +189,9 @@ const GamePage = () => {
                     { backgroundColor: getBubbleColor(player.character) },
                   ]}
                 >
-                  <Text style={styles.bubbleText}>
+                  <CustomText style={styles.bubbleText} bold>
                     {player.name?.trim()?.charAt(0)?.toUpperCase() || '?'}
-                  </Text>
+                  </CustomText>
                 </Pressable>
                 {player.id === viewedPlayer && (
                   <View
@@ -246,7 +248,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     zIndex: 100,
-    marginTop: 10,
+    marginTop: 16,
   },
   innerSidebar: {
     alignItems: 'center',
@@ -266,12 +268,24 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     color: 'white',
-    fontWeight: 'bold',
   },
+  diceContainer: {
+    backgroundColor: '#cce4ff',
+    borderRadius: 16,
+    padding: 16,
+    alignSelf: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 8,
+  },
+
   diceControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'center',
     gap: 20,
   },
   diceButton: {
@@ -285,11 +299,9 @@ const styles = StyleSheet.create({
   diceButtonText: {
     color: 'white',
     fontSize: 24,
-    fontWeight: 'bold',
   },
   diceValue: {
     fontSize: 24,
-    fontWeight: 'bold',
   },
   triangle: {
     width: 0,
@@ -303,12 +315,12 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: 10, // bring it down inside the container a bit
-    right: 10, // aligned to the right edge
+    top: 10,
+    right: 10,
     width: 40,
     height: 40,
-    borderRadius: 20, // circular button
-    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent dark bg to stand out
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 200,
@@ -317,11 +329,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
   },
-
   closeButtonText: {
     color: 'white',
     fontSize: 20,
-    fontWeight: 'bold',
     lineHeight: 20,
   },
 });

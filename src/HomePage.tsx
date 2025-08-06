@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
@@ -9,6 +8,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import JoinHostModal from './components/JoinHostModal';
 import { StatusBar, useColorScheme } from 'react-native';
+import CustomText from './components/CustomText';
 
 const HomePage = () => {
   const [isOpen, setOpen] = useState(false);
@@ -38,21 +38,27 @@ const HomePage = () => {
     >
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
-      <View>
-        <Text style={styles.title}>Vantage Connect</Text>
+      <View style={styles.container}>
+        <CustomText style={styles.title} bold>
+          Vantage Connect
+        </CustomText>
 
         <TouchableOpacity
           onPress={() => toggleModal('host')}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>Host a Game</Text>
+          <CustomText style={styles.buttonText} bold>
+            Host a Game
+          </CustomText>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => toggleModal('join')}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>Join a Game</Text>
+          <CustomText style={styles.buttonText} bold>
+            Join a Game
+          </CustomText>
         </TouchableOpacity>
       </View>
 
@@ -71,11 +77,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  container: {
+    alignItems: 'center',
+  },
   title: {
     fontSize: 28,
     color: '#fff',
     marginBottom: 40,
-    fontWeight: 'bold',
   },
   button: {
     backgroundColor: '#A6D9F7',
@@ -89,7 +97,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'black',
     fontSize: 18,
-    fontWeight: '600',
   },
 });
 

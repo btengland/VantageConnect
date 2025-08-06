@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import CustomText from './CustomText';
 
 type AppButtonProps = {
   title: string;
@@ -8,7 +9,7 @@ type AppButtonProps = {
 
 const AppButton = ({ title, onPress }: AppButtonProps) => (
   <Pressable style={styles.button} onPress={onPress}>
-    <Text style={styles.text}>{title}</Text>
+    <CustomText style={styles.text}>{title}</CustomText>
   </Pressable>
 );
 

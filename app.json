@@ -1,4 +1,7 @@
 {
   "name": "RemoteVantage",
-  "displayName": "RemoteVantage"
+  "displayName": "RemoteVantage",
+  "plugins": [
+    "expo-font"
+  ]
 }

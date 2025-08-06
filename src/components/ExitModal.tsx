@@ -1,8 +1,8 @@
-// ExitModal.tsx
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { SharedStyles } from './SharedStyles';
 import BaseModal from './BaseModal';
+import CustomText from './CustomText';
 
 type ExitModalProps = {
   isOpen: boolean;
@@ -18,10 +18,14 @@ const ExitModal = ({ isOpen, toggleModal }: ExitModalProps) => {
     >
       <View style={SharedStyles.buttonContainer}>
         <Pressable style={styles.button} onPress={() => toggleModal(false)}>
-          <Text style={styles.textStyle}>Close</Text>
+          <CustomText style={styles.textStyle} bold>
+            Close
+          </CustomText>
         </Pressable>
         <Pressable style={styles.button} onPress={() => toggleModal(true)}>
-          <Text style={styles.textStyle}>Exit</Text>
+          <CustomText style={styles.textStyle} bold>
+            Exit
+          </CustomText>
         </Pressable>
       </View>
     </BaseModal>
@@ -39,7 +43,6 @@ const styles = StyleSheet.create({
   },
   textStyle: {
     color: 'white',
-    fontWeight: 'bold',
     textAlign: 'center',
   },
 });

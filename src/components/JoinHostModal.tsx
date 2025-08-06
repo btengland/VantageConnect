@@ -1,14 +1,7 @@
-// JoinHostModal.tsx
 import React, { useState } from 'react';
-import {
-  Modal,
-  Text,
-  Pressable,
-  View,
-  StyleSheet,
-  TextInput,
-} from 'react-native';
+import { Modal, Pressable, View, StyleSheet, TextInput } from 'react-native';
 import { SharedStyles } from './SharedStyles';
+import CustomText from './CustomText'; // import CustomText
 
 type JoinHostModalProps = {
   isOpen: boolean;
@@ -32,9 +25,9 @@ const JoinHostModal = ({
     >
       <View style={[SharedStyles.flexCenter, SharedStyles.dimBackground]}>
         <View style={SharedStyles.modalView}>
-          <Text style={styles.modalText}>
+          <CustomText style={styles.modalText} bold>
             {buttonPressed === 'join' ? 'Join' : 'Host'} a Game
-          </Text>
+          </CustomText>
 
           {buttonPressed === 'join' && (
             <TextInput
@@ -49,16 +42,18 @@ const JoinHostModal = ({
 
           <View style={SharedStyles.buttonContainer}>
             <Pressable style={styles.button} onPress={() => toggleModal('')}>
-              <Text style={styles.textStyle}>Close</Text>
+              <CustomText style={styles.textStyle} bold>
+                Close
+              </CustomText>
             </Pressable>
 
             <Pressable
               style={styles.button}
               onPress={() => toggleModal('', true)}
             >
-              <Text style={styles.textStyle}>
+              <CustomText style={styles.textStyle} bold>
                 {buttonPressed === 'join' ? 'Join' : 'Host'} Game
-              </Text>
+              </CustomText>
             </Pressable>
           </View>
         </View>
@@ -94,7 +89,6 @@ const styles = StyleSheet.create({
   },
   textStyle: {
     color: 'white',
-    fontWeight: 'bold',
     textAlign: 'center',
   },
 });

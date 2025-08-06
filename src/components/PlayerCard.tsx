@@ -1,9 +1,7 @@
-// src/components/PlayerCard.tsx
-
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, TextInput } from 'react-native';
 import { SharedStyles } from './SharedStyles';
-import { TextInput } from 'react-native';
+import CustomText from './CustomText';
 
 type Player = {
   id: number;
@@ -51,11 +49,11 @@ function PlayerCard(props: PlayerCardProps) {
         { backgroundColor: getCharacterColor(player.character) },
       ]}
     >
-      <Text style={styles.sectionHeader}>
+      <CustomText style={styles.sectionHeader} bold>
         {getOrdinal(player.id + 1)} Player
-      </Text>
+      </CustomText>
       <View style={styles.row}>
-        <Text style={styles.label}>Player Name:</Text>
+        <CustomText style={styles.label}>Player Name:</CustomText>
         <TextInput
           style={styles.value}
           value={player.name}
@@ -64,7 +62,7 @@ function PlayerCard(props: PlayerCardProps) {
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Character:</Text>
+        <CustomText style={styles.label}>Character:</CustomText>
         <TextInput
           style={styles.value}
           value={player.character}
@@ -73,7 +71,7 @@ function PlayerCard(props: PlayerCardProps) {
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Escape Pod:</Text>
+        <CustomText style={styles.label}>Escape Pod:</CustomText>
         <TextInput
           style={styles.value}
           value={player.escapePod}
@@ -82,7 +80,7 @@ function PlayerCard(props: PlayerCardProps) {
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Current Location:</Text>
+        <CustomText style={styles.label}>Current Location:</CustomText>
         <TextInput
           keyboardType="number-pad"
           maxLength={3}
@@ -93,35 +91,47 @@ function PlayerCard(props: PlayerCardProps) {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Text style={styles.subHeader}>Current Action</Text>
+        <CustomText style={styles.subHeader} bold>
+          Current Action
+        </CustomText>
         <View
           style={[
             styles.turnTextContainer,
             playerTurn === player.id && styles.myTurnBackground,
           ]}
         >
-          <Text style={styles.turnText}>
+          <CustomText style={styles.turnText} bold>
             {playerTurn === player.id
               ? "It's your turn"
               : `It's ${currentTurnPlayerName}${
                   currentTurnPlayerName.endsWith('s') ? "'" : "'s"
                 } turn`}
-          </Text>
+          </CustomText>
         </View>
 
         {playerTurn === player.id && (
           <Pressable onPress={handleEndTurn}>
-            <Text style={SharedStyles.button}>Done</Text>
+            <CustomText style={SharedStyles.button} bold>
+              Done
+            </CustomText>
           </Pressable>
         )}
       </View>
-      <Text style={styles.subHeader}>Skill Tokens</Text>
+      <CustomText style={styles.subHeader} bold>
+        Skill Tokens
+      </CustomText>
       <View style={styles.grid} />
-      <Text style={styles.subHeader}>Impact Dice Slots in Card Grid</Text>
+      <CustomText style={styles.subHeader} bold>
+        Impact Dice Slots in Card Grid
+      </CustomText>
       <View style={styles.grid} />
-      <Text style={styles.subHeader}>Status Updates</Text>
+      <CustomText style={styles.subHeader} bold>
+        Status Updates
+      </CustomText>
       <View style={styles.statusBox} />
-      <Text style={styles.subHeader}>Journal</Text>
+      <CustomText style={styles.subHeader} bold>
+        Journal
+      </CustomText>
       <View style={styles.journalBox} />
     </View>
   );
@@ -134,13 +144,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   sectionHeader: {
-    fontWeight: 'bold',
     textAlign: 'center',
     borderBottomWidth: 1,
     marginBottom: 6,
   },
   subHeader: {
-    fontWeight: 'bold',
     textAlign: 'center',
     textDecorationLine: 'underline',
     marginTop: 10,
@@ -188,7 +196,6 @@ const styles = StyleSheet.create({
     minWidth: '60%', // or fixed width like 200
   },
   turnText: {
-    fontWeight: 'bold',
     fontSize: 16,
     color: '#333',
     textAlign: 'center',
