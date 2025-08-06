@@ -22,7 +22,7 @@ const GamePage = () => {
     {
       id: 0,
       name: 'John',
-      character: 'Jules',
+      character: 'Jules, the Captain',
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
@@ -38,7 +38,7 @@ const GamePage = () => {
     {
       id: 1,
       name: 'Jones',
-      character: 'Tina',
+      character: 'Tina, the Marine',
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
@@ -54,7 +54,7 @@ const GamePage = () => {
     {
       id: 2,
       name: 'Richard',
-      character: 'Ariel',
+      character: 'Ariel, the Engineer',
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
@@ -69,8 +69,8 @@ const GamePage = () => {
     },
     {
       id: 3,
-      name: 'Richard',
-      character: 'Emilien',
+      name: 'Sarah',
+      character: 'Emilien, the Scholar',
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
@@ -85,8 +85,8 @@ const GamePage = () => {
     },
     {
       id: 4,
-      name: 'Richard',
-      character: 'Ira',
+      name: 'Linda',
+      character: 'Ira, the Medic',
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
@@ -101,8 +101,8 @@ const GamePage = () => {
     },
     {
       id: 5,
-      name: 'Richard',
-      character: 'Soren',
+      name: 'Alex',
+      character: 'Soren, the Navigator',
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
@@ -126,14 +126,6 @@ const GamePage = () => {
       (navigation as any).navigate('Home');
     }
     setOpen(!isOpen);
-  };
-
-  const updatePlayerField = (id: number, field: string, value: string) => {
-    setPlayerInfo(prev =>
-      prev.map(player =>
-        player.id === id ? { ...player, [field]: value } : player,
-      ),
-    );
   };
 
   const bubbleColors: { [key: string]: string } = {
@@ -252,7 +244,6 @@ const GamePage = () => {
           {/* Player Card */}
           <PlayerCard
             player={playerInfo[viewedPlayer]}
-            updatePlayerField={updatePlayerField}
             getCharacterColor={getCharacterColor}
           />
         </View>
