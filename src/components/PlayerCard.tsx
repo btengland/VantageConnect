@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,7 +6,9 @@ import {
   TextInput,
   Platform,
   ScrollView,
+  Animated,
   Image,
+  Easing,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
@@ -44,6 +46,27 @@ const CHARACTERS = [
 const ESCAPE_PODS = ['002', '003', '004', '005', '006', '007'];
 
 function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]),
+    ).start();
+  }, [pulseAnim]);
+
   const getOrdinal = (n: number) => {
     const suffixes = ['th', 'st', 'nd', 'rd'];
     const v = n % 100;
@@ -112,15 +135,42 @@ function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
 
       {/* Current Location */}
       <View style={styles.locationContainer}>
-        <CustomText style={styles.label} bold>
+        <CustomText style={styles.subHeader} bold>
           Current Location
         </CustomText>
-        <TextInput
-          keyboardType="number-pad"
-          maxLength={3}
-          style={styles.locationInput}
-          value={player.location}
-        />
+        <Animated.View
+          style={[
+            styles.locationCircle,
+            {
+              shadowOpacity: pulseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.3, 0.8],
+              }),
+              shadowRadius: pulseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [5, 15],
+              }),
+              transform: [
+                {
+                  scale: pulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.05],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <TextInput
+            keyboardType="number-pad"
+            maxLength={3}
+            style={[
+              styles.locationInput,
+              { color: getCharacterColor(player.character) },
+            ]}
+            value={player.location}
+          />
+        </Animated.View>
       </View>
 
       {/* Current Turn Section */}
@@ -148,57 +198,65 @@ function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
       </View>
 
       {/* Skill Tokens */}
-      <CustomText style={styles.subHeader} bold>
-        Skill Tokens
-      </CustomText>
-      <View style={styles.skillTokenGrid}>
-        {player.skillTokens.map((token, index) => (
-          <View key={index} style={styles.skillTokenBox}>
-            <View style={styles.iconBox}>
-              <View style={styles.tokenContent}>
-                <View style={styles.tokenIcon}>
-                  <View style={styles.iconWrapper}>
-                    <Image
-                      source={token.icon}
-                      style={{ width: 30, height: 30 }}
-                      resizeMode="contain"
-                    />
+      <View style={{ marginTop: 16 }}>
+        <CustomText style={styles.subHeader} bold>
+          Skill Tokens
+        </CustomText>
+        <View style={styles.skillTokenGrid}>
+          {player.skillTokens.map((token, index) => (
+            <View key={index} style={styles.skillTokenBox}>
+              <View style={styles.iconBox}>
+                <View style={styles.tokenContent}>
+                  <View style={styles.tokenIcon}>
+                    <View style={styles.iconWrapper}>
+                      <Image
+                        source={token.icon}
+                        style={{ width: 30, height: 30 }}
+                        resizeMode="contain"
+                      />
+                    </View>
                   </View>
-                </View>
-                <View style={styles.counterContainer}>
-                  <Pressable style={styles.tokenButton}>
-                    <CustomText style={styles.tokenButtonText}>-</CustomText>
-                  </Pressable>
-                  <CustomText style={styles.tokenQuantity}>
-                    {token.quantity}
-                  </CustomText>
-                  <Pressable style={styles.tokenButton}>
-                    <CustomText style={styles.tokenButtonText}>+</CustomText>
-                  </Pressable>
+                  <View style={styles.counterContainer}>
+                    <Pressable style={styles.tokenButton}>
+                      <CustomText style={styles.tokenButtonText}>-</CustomText>
+                    </Pressable>
+                    <CustomText style={styles.tokenQuantity}>
+                      {token.quantity}
+                    </CustomText>
+                    <Pressable style={styles.tokenButton}>
+                      <CustomText style={styles.tokenButtonText}>+</CustomText>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
 
       {/* Impact Dice Grid */}
-      <CustomText style={styles.subHeader} bold>
-        Impact Dice Slots in Card Grid
-      </CustomText>
-      <View style={styles.grid} />
+      <View style={{ marginTop: 16 }}>
+        <CustomText style={styles.subHeader} bold>
+          Impact Dice Slots in Card Grid
+        </CustomText>
+        <View style={styles.grid} />
+      </View>
 
       {/* Status Box */}
-      <CustomText style={styles.subHeader} bold>
-        Status Updates
-      </CustomText>
-      <View style={styles.statusBox} />
+      <View style={{ marginTop: 16 }}>
+        <CustomText style={styles.subHeader} bold>
+          Status Updates
+        </CustomText>
+        <View style={styles.statusBox} />
+      </View>
 
       {/* Journal */}
-      <CustomText style={styles.subHeader} bold>
-        Journal
-      </CustomText>
-      <View style={styles.journalBox} />
+      <View style={{ marginTop: 16 }}>
+        <CustomText style={styles.subHeader} bold>
+          Journal
+        </CustomText>
+        <View style={styles.journalBox} />
+      </View>
     </ScrollView>
   );
 }
@@ -220,7 +278,6 @@ const styles = StyleSheet.create({
   subHeader: {
     textAlign: 'center',
     textDecorationLine: 'underline',
-    marginTop: 10,
     marginBottom: 6,
   },
 
@@ -242,21 +299,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     justifyContent: 'center',
   },
+
+  // LOCATION
   locationContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 12,
     gap: 6,
     width: '100%',
   },
+  locationCircle: {
+    backgroundColor: '#025472',
+    borderRadius: 60,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
   locationInput: {
-    width: 100,
-    fontWeight: 'bold',
-    fontSize: 36,
-    backgroundColor: '#eee',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    width: 90,
+    fontWeight: '900',
+    fontSize: 38,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    backgroundColor: 'transparent',
+    textAlign: 'center',
+    paddingVertical: 0,
   },
 
   // PICKER STYLES
@@ -277,7 +342,11 @@ const styles = StyleSheet.create({
   // TURN STATUS
   buttonContainer: {
     alignItems: 'center',
-    marginVertical: 8,
+    marginVertical: 16,
+    backgroundColor: '#eee',
+    borderRadius: 16,
+    padding: 16,
+    alignSelf: 'center',
   },
   turnTextContainer: {
     backgroundColor: '#f0f4f8',
@@ -311,14 +380,10 @@ const styles = StyleSheet.create({
   },
   statusBox: {
     height: 40,
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
+    backgroundColor: '#eee',
   },
   journalBox: {
     height: 40,
-    borderTopWidth: 1,
-    borderColor: '#ccc',
   },
 
   // SKILL TOKENS
@@ -334,8 +399,6 @@ const styles = StyleSheet.create({
     padding: 8,
     marginVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
     alignItems: 'center',
   },
   iconBox: {
