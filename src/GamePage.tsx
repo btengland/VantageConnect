@@ -8,16 +8,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
 
 const GamePage = () => {
-  const Move = require('./assets/Move.png');
-  const Look = require('./assets/Look.png');
-  const Engage = require('./assets/Engage.png');
-  const Help = require('./assets/Help.png');
-  const Take = require('./assets/Take.png');
-  const Overpower = require('./assets/Overpower.png');
+  // Define icons once here
+  const skillTokenIcons = [
+    require('./assets/Move.png'),
+    require('./assets/Look.png'),
+    require('./assets/Engage.png'),
+    require('./assets/Help.png'),
+    require('./assets/Take.png'),
+    require('./assets/Overpower.png'),
+  ];
 
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState(0);
+
+  // Player skillTokens only store quantities now
   const [playerInfo, setPlayerInfo] = useState([
     {
       id: 0,
@@ -26,12 +31,12 @@ const GamePage = () => {
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
-        { icon: Move, quantity: 0 },
-        { icon: Look, quantity: 0 },
-        { icon: Engage, quantity: 0 },
-        { icon: Help, quantity: 0 },
-        { icon: Take, quantity: 0 },
-        { icon: Overpower, quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
       ],
       turn: true,
     },
@@ -42,12 +47,12 @@ const GamePage = () => {
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
-        { icon: Move, quantity: 0 },
-        { icon: Look, quantity: 0 },
-        { icon: Engage, quantity: 0 },
-        { icon: Help, quantity: 0 },
-        { icon: Take, quantity: 0 },
-        { icon: Overpower, quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
       ],
       turn: false,
     },
@@ -58,12 +63,12 @@ const GamePage = () => {
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
-        { icon: Move, quantity: 0 },
-        { icon: Look, quantity: 0 },
-        { icon: Engage, quantity: 0 },
-        { icon: Help, quantity: 0 },
-        { icon: Take, quantity: 0 },
-        { icon: Overpower, quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
       ],
       turn: false,
     },
@@ -74,12 +79,12 @@ const GamePage = () => {
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
-        { icon: Move, quantity: 0 },
-        { icon: Look, quantity: 0 },
-        { icon: Engage, quantity: 0 },
-        { icon: Help, quantity: 0 },
-        { icon: Take, quantity: 0 },
-        { icon: Overpower, quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
       ],
       turn: false,
     },
@@ -90,12 +95,12 @@ const GamePage = () => {
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
-        { icon: Move, quantity: 0 },
-        { icon: Look, quantity: 0 },
-        { icon: Engage, quantity: 0 },
-        { icon: Help, quantity: 0 },
-        { icon: Take, quantity: 0 },
-        { icon: Overpower, quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
       ],
       turn: false,
     },
@@ -106,12 +111,12 @@ const GamePage = () => {
       escapePod: 'Delta',
       location: '123',
       skillTokens: [
-        { icon: Move, quantity: 0 },
-        { icon: Look, quantity: 0 },
-        { icon: Engage, quantity: 0 },
-        { icon: Help, quantity: 0 },
-        { icon: Take, quantity: 0 },
-        { icon: Overpower, quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
+        { quantity: 0 },
       ],
       turn: false,
     },
@@ -143,36 +148,11 @@ const GamePage = () => {
     navigator: '#794c9f',
   };
 
-  const characterColor: { [key: string]: string } = {
-    jules: '#74cbea',
-    captain: '#74cbea',
-    tina: '#ef6c6a',
-    marine: '#ef6c6a',
-    ariel: '#fee866',
-    engineer: '#fee866',
-    emilien: '#fbb26e',
-    scholar: '#fbb26e',
-    ira: '#5ecf90',
-    medic: '#5ecf90',
-    soren: '#a181c0',
-    navigator: '#a181c0',
-  };
-
   const getBubbleColor = (characterText: string): string => {
     const lowerText = characterText.toLowerCase();
     for (const key in bubbleColors) {
       if (lowerText.includes(key)) {
         return bubbleColors[key];
-      }
-    }
-    return 'darkgray';
-  };
-
-  const getCharacterColor = (characterText: string): string => {
-    const lowerText = characterText.toLowerCase();
-    for (const key in characterColor) {
-      if (lowerText.includes(key)) {
-        return characterColor[key];
       }
     }
     return 'darkgray';
@@ -223,12 +203,17 @@ const GamePage = () => {
                   style={[
                     styles.bubble,
                     { backgroundColor: getBubbleColor(player.character) },
+                    player.turn && {
+                      borderWidth: 3,
+                      borderColor: 'white',
+                    },
                   ]}
                 >
                   <CustomText style={styles.bubbleText} bold>
                     {player.name?.trim()?.charAt(0)?.toUpperCase() || '?'}
                   </CustomText>
                 </Pressable>
+
                 {player.id === viewedPlayer && (
                   <View
                     style={[
@@ -244,7 +229,16 @@ const GamePage = () => {
           {/* Player Card */}
           <PlayerCard
             player={playerInfo[viewedPlayer]}
-            getCharacterColor={getCharacterColor}
+            getCharacterColor={character => {
+              const lowerText = character.toLowerCase();
+              for (const key in bubbleColors) {
+                if (lowerText.includes(key)) {
+                  return bubbleColors[key];
+                }
+              }
+              return 'darkgray';
+            }}
+            skillTokenIcons={skillTokenIcons}
           />
         </View>
       </View>
@@ -291,11 +285,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    position: 'relative',
+    zIndex: 10,
   },
   bubbleText: {
     color: 'white',

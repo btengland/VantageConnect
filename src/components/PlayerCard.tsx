@@ -15,7 +15,6 @@ import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
 
 type SkillToken = {
-  icon: any;
   quantity: number;
 };
 
@@ -32,6 +31,7 @@ type Player = {
 type PlayerCardProps = {
   player: Player;
   getCharacterColor: (characterText: string) => string;
+  skillTokenIcons: any[];
 };
 
 const CHARACTERS = [
@@ -45,8 +45,33 @@ const CHARACTERS = [
 
 const ESCAPE_PODS = ['002', '003', '004', '005', '006', '007'];
 
-function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
+function PlayerCard({
+  player,
+  getCharacterColor,
+  skillTokenIcons,
+}: PlayerCardProps) {
   const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  function lightenColor(hex: string, percent: number) {
+    // Remove hash if present
+    hex = hex.replace(/^#/, '');
+
+    // Parse r,g,b
+    const num = parseInt(hex, 16);
+    let r = (num >> 16) & 0xff;
+    let g = (num >> 8) & 0xff;
+    let b = num & 0xff;
+
+    // Increase each channel by percent towards 255
+    r = Math.min(255, Math.floor(r + (255 - r) * percent));
+    g = Math.min(255, Math.floor(g + (255 - g) * percent));
+    b = Math.min(255, Math.floor(b + (255 - b) * percent));
+
+    // Return new hex
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  }
+
+  const lighterBg = lightenColor(getCharacterColor(player.character), 0.6);
 
   useEffect(() => {
     Animated.loop(
@@ -76,18 +101,31 @@ function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
-  const getTurnText = () =>
-    player.turn
-      ? "It's your turn"
-      : `It's ${player.name}${player.name.endsWith('s') ? "'" : "'s"} turn`;
-
   return (
     <ScrollView
-      contentContainerStyle={[
-        styles.card,
-        { backgroundColor: getCharacterColor(player.character) },
-      ]}
+      contentContainerStyle={[styles.card, { backgroundColor: lighterBg }]}
     >
+      {/* Current Turn Section */}
+      {player.turn && (
+        <View style={styles.buttonContainer}>
+          <View
+            style={[
+              styles.turnTextContainer,
+              player.turn && styles.myTurnBackground,
+            ]}
+          >
+            <CustomText style={styles.turnText} bold>
+              It's your turn
+            </CustomText>
+          </View>
+          <Pressable>
+            <CustomText style={SharedStyles.button} bold>
+              Done
+            </CustomText>
+          </Pressable>
+        </View>
+      )}
+
       {/* Header */}
       <CustomText style={styles.sectionHeader} bold>
         {getOrdinal(player.id + 1)} Player
@@ -164,37 +202,10 @@ function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
           <TextInput
             keyboardType="number-pad"
             maxLength={3}
-            style={[
-              styles.locationInput,
-              { color: getCharacterColor(player.character) },
-            ]}
+            style={[styles.locationInput, { color: lighterBg }]}
             value={player.location}
           />
         </Animated.View>
-      </View>
-
-      {/* Current Turn Section */}
-      <View style={styles.buttonContainer}>
-        <CustomText style={styles.subHeader} bold>
-          Current Action
-        </CustomText>
-        <View
-          style={[
-            styles.turnTextContainer,
-            player.turn && styles.myTurnBackground,
-          ]}
-        >
-          <CustomText style={styles.turnText} bold>
-            {getTurnText()}
-          </CustomText>
-        </View>
-        {player.turn && (
-          <Pressable>
-            <CustomText style={SharedStyles.button} bold>
-              Done
-            </CustomText>
-          </Pressable>
-        )}
       </View>
 
       {/* Skill Tokens */}
@@ -210,7 +221,7 @@ function PlayerCard({ player, getCharacterColor }: PlayerCardProps) {
                   <View style={styles.tokenIcon}>
                     <View style={styles.iconWrapper}>
                       <Image
-                        source={token.icon}
+                        source={skillTokenIcons[index]}
                         style={{ width: 30, height: 30 }}
                         resizeMode="contain"
                       />
@@ -342,7 +353,7 @@ const styles = StyleSheet.create({
   // TURN STATUS
   buttonContainer: {
     alignItems: 'center',
-    marginVertical: 16,
+    marginBottom: 16,
     backgroundColor: '#eee',
     borderRadius: 16,
     padding: 16,
@@ -351,7 +362,6 @@ const styles = StyleSheet.create({
   turnTextContainer: {
     backgroundColor: '#f0f4f8',
     paddingVertical: 8,
-    paddingHorizontal: 16,
     borderRadius: 12,
     marginBottom: 10,
     alignSelf: 'center',
