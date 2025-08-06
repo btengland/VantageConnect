@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, TextInput, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
@@ -35,8 +42,8 @@ function PlayerCard(props: PlayerCardProps) {
   };
 
   return (
-    <View
-      style={[
+    <ScrollView
+      contentContainerStyle={[
         styles.card,
         { backgroundColor: getCharacterColor(player.character) },
       ]}
@@ -171,7 +178,7 @@ function PlayerCard(props: PlayerCardProps) {
         Journal
       </CustomText>
       <View style={styles.journalBox} />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -184,7 +191,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     textAlign: 'center',
     borderBottomWidth: 1,
-    marginBottom: 6,
+    marginBottom: 16,
   },
   subHeader: {
     textAlign: 'center',
@@ -205,21 +212,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   value: {
-    flex: 1,
-    height: 50,
+    width: 210,
+    height: 60,
     backgroundColor: '#eee',
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   pickerWrapper: {
-    flex: 1,
+    width: 210,
     backgroundColor: '#eee',
     borderRadius: 6,
     overflow: 'hidden',
   },
   pickerAndroid: {
-    height: 50,
+    height: 60,
     color: '#000',
   },
   pickerItem: {
