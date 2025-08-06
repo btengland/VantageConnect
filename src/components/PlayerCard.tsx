@@ -1,7 +1,13 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, TextInput, Platform } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
+
+type SkillToken = {
+  icon: any;
+  quantity: number;
+};
 
 type Player = {
   id: number;
@@ -9,32 +15,18 @@ type Player = {
   character: string;
   escapePod: string;
   location: string;
+  skillTokens: SkillToken[];
+  turn: boolean;
 };
 
 type PlayerCardProps = {
   player: Player;
-  playerTurn: number;
-  setPlayerTurn: React.Dispatch<React.SetStateAction<number>>;
-  totalPlayers: number;
-  currentTurnPlayerName: string;
   updatePlayerField: (id: number, field: string, value: string) => void;
   getCharacterColor: (characterText: string) => string;
 };
 
 function PlayerCard(props: PlayerCardProps) {
-  const {
-    player,
-    playerTurn,
-    setPlayerTurn,
-    totalPlayers,
-    currentTurnPlayerName,
-    updatePlayerField,
-    getCharacterColor,
-  } = props;
-
-  const handleEndTurn = () => {
-    setPlayerTurn(prev => (prev + 1) % totalPlayers);
-  };
+  const { player, updatePlayerField, getCharacterColor } = props;
 
   const getOrdinal = (n: number) => {
     const suffixes = ['th', 'st', 'nd', 'rd'];
@@ -52,8 +44,11 @@ function PlayerCard(props: PlayerCardProps) {
       <CustomText style={styles.sectionHeader} bold>
         {getOrdinal(player.id + 1)} Player
       </CustomText>
+
       <View style={styles.row}>
-        <CustomText style={styles.label}>Player Name:</CustomText>
+        <CustomText style={styles.label} bold>
+          Player Name:
+        </CustomText>
         <TextInput
           style={styles.value}
           value={player.name}
@@ -62,25 +57,64 @@ function PlayerCard(props: PlayerCardProps) {
       </View>
 
       <View style={styles.row}>
-        <CustomText style={styles.label}>Character:</CustomText>
-        <TextInput
-          style={styles.value}
-          value={player.character}
-          onChangeText={text => updatePlayerField(player.id, 'character', text)}
-        />
+        <CustomText style={styles.label} bold>
+          Character:
+        </CustomText>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={player.character}
+            onValueChange={value =>
+              updatePlayerField(player.id, 'character', value)
+            }
+            style={Platform.OS === 'android' ? styles.pickerAndroid : undefined}
+            itemStyle={styles.pickerItem}
+          >
+            <Picker.Item
+              label="Jules, the Captain"
+              value="Jules, the Captain"
+            />
+            <Picker.Item label="Tina, the Marine" value="Tina, the Marine" />
+            <Picker.Item
+              label="Ariel, the Engineer"
+              value="Ariel, the Engineer"
+            />
+            <Picker.Item
+              label="Emilien, the Scholar"
+              value="Emilien, the Scholar"
+            />
+            <Picker.Item label="Ira, the Medic" value="Ira, the Medic" />
+            <Picker.Item
+              label="Soren, the Navigator"
+              value="Soren, the Navigator"
+            />
+          </Picker>
+        </View>
       </View>
 
       <View style={styles.row}>
-        <CustomText style={styles.label}>Escape Pod:</CustomText>
-        <TextInput
-          style={styles.value}
-          value={player.escapePod}
-          onChangeText={text => updatePlayerField(player.id, 'escapePod', text)}
-        />
+        <CustomText style={styles.label} bold>
+          Escape Pod:
+        </CustomText>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={player.escapePod}
+            onValueChange={value =>
+              updatePlayerField(player.id, 'escapePod', value)
+            }
+            style={Platform.OS === 'android' ? styles.pickerAndroid : undefined}
+            itemStyle={styles.pickerItem}
+          >
+            {['002', '003', '004', '005', '006', '007'].map(pod => (
+              <Picker.Item key={pod} label={pod} value={pod} />
+            ))}
+          </Picker>
+        </View>
       </View>
 
       <View style={styles.row}>
-        <CustomText style={styles.label}>Current Location:</CustomText>
+        <CustomText style={styles.label} bold>
+          Current Location:
+        </CustomText>
         <TextInput
           keyboardType="number-pad"
           maxLength={3}
@@ -97,38 +131,42 @@ function PlayerCard(props: PlayerCardProps) {
         <View
           style={[
             styles.turnTextContainer,
-            playerTurn === player.id && styles.myTurnBackground,
+            player.turn && styles.myTurnBackground,
           ]}
         >
           <CustomText style={styles.turnText} bold>
-            {playerTurn === player.id
+            {player.turn
               ? "It's your turn"
-              : `It's ${currentTurnPlayerName}${
-                  currentTurnPlayerName.endsWith('s') ? "'" : "'s"
+              : `It's ${player.name}${
+                  player.name.endsWith('s') ? "'" : "'s"
                 } turn`}
           </CustomText>
         </View>
 
-        {playerTurn === player.id && (
-          <Pressable onPress={handleEndTurn}>
+        {player.turn && (
+          <Pressable>
             <CustomText style={SharedStyles.button} bold>
               Done
             </CustomText>
           </Pressable>
         )}
       </View>
+
       <CustomText style={styles.subHeader} bold>
         Skill Tokens
       </CustomText>
       <View style={styles.grid} />
+
       <CustomText style={styles.subHeader} bold>
         Impact Dice Slots in Card Grid
       </CustomText>
       <View style={styles.grid} />
+
       <CustomText style={styles.subHeader} bold>
         Status Updates
       </CustomText>
       <View style={styles.statusBox} />
+
       <CustomText style={styles.subHeader} bold>
         Journal
       </CustomText>
@@ -160,6 +198,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     marginBottom: 4,
+    alignItems: 'center',
   },
   label: {
     flex: 1,
@@ -167,10 +206,24 @@ const styles = StyleSheet.create({
   },
   value: {
     flex: 1,
+    height: 50,
     backgroundColor: '#eee',
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
+  },
+  pickerWrapper: {
+    flex: 1,
+    backgroundColor: '#eee',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  pickerAndroid: {
+    height: 50,
+    color: '#000',
+  },
+  pickerItem: {
+    fontSize: 14,
   },
   locationInput: {
     alignItems: 'center',
@@ -182,18 +235,18 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   turnTextContainer: {
-    backgroundColor: '#f0f4f8', // subtle light background
+    backgroundColor: '#f0f4f8',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
     marginBottom: 10,
-    alignSelf: 'center', // centers container horizontally
+    alignSelf: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    elevation: 2, // for Android shadow
-    minWidth: '60%', // or fixed width like 200
+    elevation: 2,
+    minWidth: '60%',
   },
   turnText: {
     fontSize: 16,

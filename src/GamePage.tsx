@@ -5,8 +5,7 @@ import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
-
-import CustomText from './components/CustomText'; // <-- import your CustomText here
+import CustomText from './components/CustomText';
 
 const GamePage = () => {
   const Move = require('./assets/Move.png');
@@ -19,7 +18,6 @@ const GamePage = () => {
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState(0);
-  const [playerTurn, setPlayerTurn] = useState(0);
   const [playerInfo, setPlayerInfo] = useState([
     {
       id: 0,
@@ -35,13 +33,23 @@ const GamePage = () => {
         { icon: Take, quantity: 0 },
         { icon: Overpower, quantity: 0 },
       ],
+      turn: true,
     },
     {
       id: 1,
-      name: 'Richard',
+      name: 'Jones',
       character: 'Tina',
       escapePod: 'Delta',
       location: '123',
+      skillTokens: [
+        { icon: Move, quantity: 0 },
+        { icon: Look, quantity: 0 },
+        { icon: Engage, quantity: 0 },
+        { icon: Help, quantity: 0 },
+        { icon: Take, quantity: 0 },
+        { icon: Overpower, quantity: 0 },
+      ],
+      turn: false,
     },
     {
       id: 2,
@@ -49,6 +57,15 @@ const GamePage = () => {
       character: 'Ariel',
       escapePod: 'Delta',
       location: '123',
+      skillTokens: [
+        { icon: Move, quantity: 0 },
+        { icon: Look, quantity: 0 },
+        { icon: Engage, quantity: 0 },
+        { icon: Help, quantity: 0 },
+        { icon: Take, quantity: 0 },
+        { icon: Overpower, quantity: 0 },
+      ],
+      turn: false,
     },
     {
       id: 3,
@@ -56,6 +73,15 @@ const GamePage = () => {
       character: 'Emilien',
       escapePod: 'Delta',
       location: '123',
+      skillTokens: [
+        { icon: Move, quantity: 0 },
+        { icon: Look, quantity: 0 },
+        { icon: Engage, quantity: 0 },
+        { icon: Help, quantity: 0 },
+        { icon: Take, quantity: 0 },
+        { icon: Overpower, quantity: 0 },
+      ],
+      turn: false,
     },
     {
       id: 4,
@@ -63,6 +89,15 @@ const GamePage = () => {
       character: 'Ira',
       escapePod: 'Delta',
       location: '123',
+      skillTokens: [
+        { icon: Move, quantity: 0 },
+        { icon: Look, quantity: 0 },
+        { icon: Engage, quantity: 0 },
+        { icon: Help, quantity: 0 },
+        { icon: Take, quantity: 0 },
+        { icon: Overpower, quantity: 0 },
+      ],
+      turn: false,
     },
     {
       id: 5,
@@ -70,6 +105,15 @@ const GamePage = () => {
       character: 'Soren',
       escapePod: 'Delta',
       location: '123',
+      skillTokens: [
+        { icon: Move, quantity: 0 },
+        { icon: Look, quantity: 0 },
+        { icon: Engage, quantity: 0 },
+        { icon: Help, quantity: 0 },
+        { icon: Take, quantity: 0 },
+        { icon: Overpower, quantity: 0 },
+      ],
+      turn: false,
     },
   ]);
 
@@ -208,10 +252,6 @@ const GamePage = () => {
           {/* Player Card */}
           <PlayerCard
             player={playerInfo[viewedPlayer]}
-            playerTurn={playerTurn}
-            setPlayerTurn={setPlayerTurn}
-            totalPlayers={playerInfo.length}
-            currentTurnPlayerName={playerInfo[playerTurn]?.name || 'Unknown'}
             updatePlayerField={updatePlayerField}
             getCharacterColor={getCharacterColor}
           />
@@ -270,23 +310,18 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   diceContainer: {
-    backgroundColor: '#cce4ff',
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
     borderRadius: 16,
     padding: 16,
     alignSelf: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 8,
   },
-
   diceControl: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 20,
+    marginTop: 8,
   },
   diceButton: {
     width: 40,
