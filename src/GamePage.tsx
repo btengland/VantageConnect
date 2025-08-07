@@ -6,6 +6,7 @@ import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
+import { getCharacterColor } from './utils';
 
 const GamePage = () => {
   // Define icons once here
@@ -151,31 +152,6 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
-  const bubbleColors: { [key: string]: string } = {
-    jules: '#23b0de',
-    captain: '#23b0de',
-    tina: '#dc2a27',
-    marine: '#dc2a27',
-    ariel: '#fdd627',
-    engineer: '#fdd627',
-    emilien: '#f48c26',
-    scholar: '#f48c26',
-    ira: '#19a557',
-    medic: '#19a557',
-    soren: '#794c9f',
-    navigator: '#794c9f',
-  };
-
-  const getBubbleColor = (characterText: string): string => {
-    const lowerText = characterText.toLowerCase();
-    for (const key in bubbleColors) {
-      if (lowerText.includes(key)) {
-        return bubbleColors[key];
-      }
-    }
-    return 'darkgray';
-  };
-
   const handleUpdatePlayer = (updatedPlayer: any) => {
     setPlayerInfo(
       playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
@@ -228,7 +204,7 @@ const GamePage = () => {
                   onPress={() => setViewedPlayer(player.id)}
                   style={[
                     styles.bubble,
-                    { backgroundColor: getBubbleColor(player.character) },
+                    { backgroundColor: getCharacterColor(player.character) },
                     player.turn && {
                       borderWidth: 3,
                       borderColor: 'white',
@@ -244,7 +220,7 @@ const GamePage = () => {
                   <View
                     style={[
                       styles.triangle,
-                      { borderTopColor: getBubbleColor(player.character) },
+                      { borderTopColor: getCharacterColor(player.character) },
                     ]}
                   />
                 )}
@@ -255,15 +231,7 @@ const GamePage = () => {
           {/* Player Card */}
           <PlayerCard
             player={playerInfo[viewedPlayer]}
-            getCharacterColor={character => {
-              const lowerText = character.toLowerCase();
-              for (const key in bubbleColors) {
-                if (lowerText.includes(key)) {
-                  return bubbleColors[key];
-                }
-              }
-              return 'darkgray';
-            }}
+            getCharacterColor={getCharacterColor}
             skillTokenIcons={skillTokenIcons}
             onUpdatePlayer={handleUpdatePlayer}
           />

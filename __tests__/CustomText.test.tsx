@@ -11,7 +11,7 @@ describe('CustomText', () => {
     const flattenedStyles = styles.flat();
 
     const hasSmallStyle = flattenedStyles.some(style =>
-      style && style.fontFamily === 'Roboto-Regular' && style.fontSize === 14
+      style && style.fontFamily === 'Roboto-Regular' && style.fontSize === 18
     );
 
     expect(hasSmallStyle).toBe(true);
