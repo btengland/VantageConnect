@@ -6,6 +6,7 @@ import {
   Modal,
   FlatList,
   StyleSheet,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -55,35 +56,36 @@ const IconPicker = ({
           setModalVisible(!modalVisible);
         }}
       >
-        <Pressable
-          style={styles.modalContainer}
-          onPress={() => setModalVisible(false)}
-        >
-          <Pressable style={styles.modalView}>
-            <FlatList
-              data={options}
-              keyExtractor={item => item.value}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={styles.option}
-                  onPress={() => {
-                    onValueChange(item.value);
-                    setModalVisible(false);
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={item.value as any}
-                    size={24}
-                    color="black"
-                  />
-                  {item.value === 'any' && (
-                    <Text style={styles.optionText}>{item.label}</Text>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalView}>
+                <FlatList
+                  data={options}
+                  keyExtractor={item => item.value}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      style={styles.option}
+                      onPress={() => {
+                        onValueChange(item.value);
+                        setModalVisible(false);
+                      }}
+                    >
+                      <MaterialCommunityIcons
+                        name={item.value as any}
+                        size={24}
+                        color="black"
+                      />
+                      {item.value === 'any' && (
+                        <Text style={styles.optionText}>{item.label}</Text>
+                      )}
+                    </Pressable>
                   )}
-                </Pressable>
-              )}
-            />
-          </Pressable>
-        </Pressable>
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </>
   );
@@ -94,17 +96,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 15,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 4,
-    minHeight: 50,
+    minHeight: 60,
   },
   pickerText: {
     fontSize: 16,
   },
   modalContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -123,7 +125,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    maxHeight: '80%',
+    maxHeight: 300,
   },
   option: {
     flexDirection: 'row',
