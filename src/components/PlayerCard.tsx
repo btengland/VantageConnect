@@ -36,7 +36,7 @@ type Player = {
   statuses: {
     heart: number;
     star: number;
-    hourglass: number;
+    'timer-sand-full': number;
   };
   impactDiceSlots: ImpactDiceSlot[];
 };
@@ -70,7 +70,7 @@ function PlayerCard({
   const IMPACT_SYMBOLS = [
     { label: 'Any', value: 'any' },
     { label: 'Heart', value: 'heart' },
-    { label: 'Hourglass', value: 'hourglass' },
+    { label: 'Hourglass', value: 'timer-sand-full' },
     { label: 'Star', value: 'star' },
     { label: 'Negative', value: 'negative' },
     { label: 'U-Turn', value: 'uturn' },
@@ -96,11 +96,11 @@ function PlayerCard({
   };
 
   const handleStatusChange = (
-    status: 'heart' | 'star' | 'hourglass',
+    status: 'heart' | 'star' | 'timer-sand-full',
     change: 1 | -1,
   ) => {
     const currentLevel = player.statuses[status];
-    const newLevel = Math.max(1, Math.min(6, currentLevel + change));
+    const newLevel = Math.max(0, Math.min(6, currentLevel + change));
     const newStatuses = { ...player.statuses, [status]: newLevel };
     onUpdatePlayer({ ...player, statuses: newStatuses });
   };
@@ -128,7 +128,7 @@ function PlayerCard({
     return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
   }
 
-  const lighterBg = lightenColor(getCharacterColor(player.character), 0.85);
+  const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
 
   useEffect(() => {
     Animated.loop(
@@ -172,12 +172,12 @@ function PlayerCard({
                 player.turn && styles.myTurnBackground,
               ]}
             >
-              <CustomText style={styles.turnText} bold>
+              <CustomText style={styles.turnText} small bold>
                 It's your turn
               </CustomText>
             </View>
             <Pressable>
-              <CustomText style={SharedStyles.button} bold>
+              <CustomText style={SharedStyles.button} small bold>
                 Done
               </CustomText>
             </Pressable>
@@ -185,20 +185,24 @@ function PlayerCard({
         )}
 
         {/* Header */}
-        <CustomText style={styles.sectionHeader} bold>
+        <CustomText style={styles.sectionHeader} small bold>
           {getOrdinal(player.id + 1)} Player
         </CustomText>
         {/* Player Name */}
         <View style={styles.row}>
-          <CustomText style={styles.label} bold>
+          <CustomText style={styles.label} small bold>
             Player Name:
           </CustomText>
-          <TextInput style={styles.value} value={player.name} />
+          <TextInput
+            style={styles.value}
+            value={player.name}
+            placeholder="Enter your name"
+          />
         </View>
 
         {/* Character Picker */}
         <View style={styles.row}>
-          <CustomText style={styles.label} bold>
+          <CustomText style={styles.label} small bold>
             Character:
           </CustomText>
           <View style={styles.pickerWrapper}>
@@ -215,7 +219,7 @@ function PlayerCard({
         </View>
         {/* Escape Pod Picker */}
         <View style={styles.row}>
-          <CustomText style={styles.label} bold>
+          <CustomText style={styles.label} small bold>
             Escape Pod:
           </CustomText>
           <View style={styles.pickerWrapper}>
@@ -233,12 +237,12 @@ function PlayerCard({
 
         {/* Current Location */}
         <View style={styles.locationContainer}>
-          <CustomText style={styles.subHeader} bold>
+          <CustomText style={styles.subHeader} small bold>
             Current Location
           </CustomText>
           <Animated.View
             style={[
-            styles.locationInputWrapper,
+              styles.locationInputWrapper,
               {
                 shadowOpacity: pulseAnim.interpolate({
                   inputRange: [0, 1],
@@ -270,7 +274,7 @@ function PlayerCard({
 
         {/* Skill Tokens */}
         <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} bold>
+          <CustomText style={styles.subHeader} small bold>
             Skill Tokens
           </CustomText>
           <View style={styles.skillTokenGrid}>
@@ -311,125 +315,149 @@ function PlayerCard({
 
         {/* Impact Dice Grid */}
         <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} bold>
-          Impact Dice Slots
+          <CustomText style={styles.subHeader} small bold>
+            Impact Dice Slots
           </CustomText>
-        <View style={styles.impactGrid}>
-          {player.impactDiceSlots.map((slot, index) => (
-            <View key={index} style={styles.impactSlot}>
-              <Pressable
-                onPress={() =>
-                  handleUpdateImpactSlot(index, {
-                    ...slot,
-                    checked: !slot.checked,
-                  })
-                }
-              >
-                <MaterialCommunityIcons
-                  name={slot.checked ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                  size={24}
-                  color="black"
-                />
-              </Pressable>
-              <View style={styles.pickerWrapperImpact}>
-                <Picker
-                  selectedValue={slot.symbol}
-                  onValueChange={itemValue =>
-                    handleUpdateImpactSlot(index, { ...slot, symbol: itemValue })
+          <View style={styles.impactGrid}>
+            {player.impactDiceSlots.map((slot, index) => (
+              <View key={index} style={styles.impactSlot}>
+                <Pressable
+                  onPress={() =>
+                    handleUpdateImpactSlot(index, {
+                      ...slot,
+                      checked: !slot.checked,
+                    })
                   }
-                  style={Platform.OS === 'android' ? styles.pickerAndroid : {}}
-                  itemStyle={styles.pickerItem}
                 >
-                  {IMPACT_SYMBOLS.map(symbol => (
-                    <Picker.Item
-                      key={symbol.value}
-                      label={symbol.label}
-                      value={symbol.value}
-                    />
-                  ))}
-                </Picker>
+                  <MaterialCommunityIcons
+                    name={
+                      slot.checked
+                        ? 'checkbox-marked'
+                        : 'checkbox-blank-outline'
+                    }
+                    size={24}
+                    color="black"
+                  />
+                </Pressable>
+                <View style={styles.pickerWrapperImpact}>
+                  <Picker
+                    selectedValue={slot.symbol}
+                    onValueChange={itemValue =>
+                      handleUpdateImpactSlot(index, {
+                        ...slot,
+                        symbol: itemValue,
+                      })
+                    }
+                    style={
+                      Platform.OS === 'android' ? styles.pickerAndroid : {}
+                    }
+                    itemStyle={styles.pickerItem}
+                  >
+                    {IMPACT_SYMBOLS.map(symbol => (
+                      <Picker.Item
+                        key={symbol.value}
+                        label={symbol.label}
+                        value={symbol.value}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+                <Pressable onPress={() => handleRemoveImpactSlot(index)}>
+                  <MaterialCommunityIcons name="delete" size={24} color="red" />
+                </Pressable>
               </View>
-              <Pressable onPress={() => handleRemoveImpactSlot(index)}>
-                <MaterialCommunityIcons name="delete" size={24} color="red" />
-              </Pressable>
-            </View>
-          ))}
-        </View>
-        <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
-          <MaterialCommunityIcons name="flash" size={24} color="white" />
-          <CustomText style={styles.addButtonText}>Add Slot</CustomText>
-        </Pressable>
+            ))}
+          </View>
+          <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
+            <MaterialCommunityIcons name="flash" size={24} color="white" />
+            <CustomText style={styles.addButtonText}>Add Slot</CustomText>
+          </Pressable>
         </View>
 
         {/* Status Box */}
         <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} bold>
+          <CustomText style={styles.subHeader} small bold>
             Status Updates
           </CustomText>
-        <View style={styles.statusContainer}>
-          {['heart', 'star', 'hourglass'].map(status => (
-            <View key={status} style={styles.statusRow}>
-              <MaterialCommunityIcons
-                name={status as any}
-                size={30}
-                color="black"
-              />
-              <View style={styles.statusTrack}>
-                {[...Array(6)].map((_, i) => (
+          <View style={styles.statusContainer}>
+            {['heart', 'star', 'timer-sand-full'].map(status => (
+              <View key={status} style={styles.statusRow}>
+                <MaterialCommunityIcons
+                  name={status as any}
+                  size={30}
+                  color="black"
+                />
+                <View style={styles.statusTrack}>
+                  {[...Array(6)].map((_, i) => (
+                    <Pressable
+                      key={i}
+                      onPress={() => {
+                        const newStatuses = {
+                          ...player.statuses,
+                          [status]: i + 1,
+                        };
+                        onUpdatePlayer({ ...player, statuses: newStatuses });
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          i <
+                          player.statuses[
+                            status as 'heart' | 'star' | 'timer-sand-full'
+                          ]
+                            ? styles.statusDotFilled
+                            : {},
+                        ]}
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.statusControls}>
                   <Pressable
-                    key={i}
-                    onPress={() => {
-                      const newStatuses = {
-                        ...player.statuses,
-                        [status]: i + 1,
-                      };
-                      onUpdatePlayer({ ...player, statuses: newStatuses });
-                    }}
+                    onPress={() =>
+                      handleStatusChange(
+                        status as 'heart' | 'star' | 'timer-sand-full',
+                        -1,
+                      )
+                    }
                   >
-                    <View
-                      style={[
-                        styles.statusDot,
-                        i < player.statuses[status as 'heart' | 'star' | 'hourglass']
-                          ? styles.statusDotFilled
-                          : {},
-                      ]}
+                    <MaterialCommunityIcons
+                      name="minus"
+                      size={30}
+                      color="black"
                     />
                   </Pressable>
-                ))}
+                  <CustomText style={styles.statusLevel}>
+                    {
+                      player.statuses[
+                        status as 'heart' | 'star' | 'timer-sand-full'
+                      ]
+                    }
+                  </CustomText>
+                  <Pressable
+                    onPress={() =>
+                      handleStatusChange(
+                        status as 'heart' | 'star' | 'timer-sand-full',
+                        1,
+                      )
+                    }
+                  >
+                    <MaterialCommunityIcons
+                      name="plus"
+                      size={30}
+                      color="black"
+                    />
+                  </Pressable>
+                </View>
               </View>
-              <View style={styles.statusControls}>
-                <Pressable
-                  onPress={() =>
-                    handleStatusChange(
-                      status as 'heart' | 'star' | 'hourglass',
-                      -1,
-                    )
-                  }
-                >
-                  <MaterialCommunityIcons name="minus" size={30} color="black" />
-                </Pressable>
-                <CustomText style={styles.statusLevel}>
-                  {player.statuses[status as 'heart' | 'star' | 'hourglass']}
-                </CustomText>
-                <Pressable
-                  onPress={() =>
-                    handleStatusChange(
-                      status as 'heart' | 'star' | 'hourglass',
-                      1,
-                    )
-                  }
-                >
-                  <MaterialCommunityIcons name="plus" size={30} color="black" />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
         </View>
 
         {/* Journal */}
         <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} bold>
+          <CustomText style={styles.subHeader} small bold>
             Journal
           </CustomText>
           <TextInput
@@ -498,9 +526,9 @@ const styles = StyleSheet.create({
   },
   locationInputWrapper: {
     backgroundColor: '#025472',
-    borderRadius: 10,
+    borderRadius: 6,
     paddingVertical: 14,
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
   },
   locationInput: {
     width: 90,

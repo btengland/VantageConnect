@@ -23,7 +23,7 @@ const JoinHostModal = ({
       visible={isOpen}
       onRequestClose={() => toggleModal('')}
     >
-      <View style={[SharedStyles.flexCenter, SharedStyles.dimBackground]}>
+      <View style={SharedStyles.flexCenter}>
         <View style={SharedStyles.modalView}>
           <CustomText style={styles.modalText} bold>
             {buttonPressed === 'join' ? 'Join' : 'Host'} a Game

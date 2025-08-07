@@ -40,7 +40,7 @@ const GamePage = () => {
       ],
       turn: true,
       journalText: '',
-      statuses: { heart: 1, star: 1, hourglass: 1 },
+      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
       impactDiceSlots: [],
     },
     {
@@ -59,7 +59,7 @@ const GamePage = () => {
       ],
       turn: false,
       journalText: '',
-      statuses: { heart: 1, star: 1, hourglass: 1 },
+      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
       impactDiceSlots: [],
     },
     {
@@ -78,7 +78,7 @@ const GamePage = () => {
       ],
       turn: false,
       journalText: '',
-      statuses: { heart: 1, star: 1, hourglass: 1 },
+      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
       impactDiceSlots: [],
     },
     {
@@ -97,7 +97,7 @@ const GamePage = () => {
       ],
       turn: false,
       journalText: '',
-      statuses: { heart: 1, star: 1, hourglass: 1 },
+      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
       impactDiceSlots: [],
     },
     {
@@ -116,7 +116,7 @@ const GamePage = () => {
       ],
       turn: false,
       journalText: '',
-      statuses: { heart: 1, star: 1, hourglass: 1 },
+      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
       impactDiceSlots: [],
     },
     {
@@ -135,7 +135,7 @@ const GamePage = () => {
       ],
       turn: false,
       journalText: '',
-      statuses: { heart: 1, star: 1, hourglass: 1 },
+      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
       impactDiceSlots: [],
     },
   ]);
