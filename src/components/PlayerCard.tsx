@@ -13,6 +13,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
+import IconPicker from './IconPicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
 import { getOrdinal, lightenColor } from '../utils';
@@ -61,7 +62,7 @@ function PlayerCard({
   const handleAddImpactSlot = () => {
     const newSlots = [
       ...player.impactDiceSlots,
-      { symbol: 'Any', checked: false },
+      { symbol: 'any', checked: false },
     ];
     onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
   };
@@ -120,6 +121,11 @@ function PlayerCard({
       <ScrollView
         contentContainerStyle={[styles.card, { backgroundColor: lighterBg }]}
       >
+        {/* Header */}
+        <CustomText style={styles.sectionHeader} small bold>
+          {getOrdinal(player.id + 1)} Player
+        </CustomText>
+
         {/* Current Turn Section */}
         {player.turn && (
           <View style={styles.buttonContainer}>
@@ -141,10 +147,6 @@ function PlayerCard({
           </View>
         )}
 
-        {/* Header */}
-        <CustomText style={styles.sectionHeader} small bold>
-          {getOrdinal(player.id + 1)} Player
-        </CustomText>
         {/* Player Name */}
         <View style={styles.row}>
           <CustomText style={styles.label} small bold>
@@ -297,7 +299,8 @@ function PlayerCard({
                   />
                 </Pressable>
                 <View style={styles.pickerWrapperImpact}>
-                  <Picker
+                  <IconPicker
+                    options={IMPACT_SYMBOLS}
                     selectedValue={slot.symbol}
                     onValueChange={itemValue =>
                       handleUpdateImpactSlot(index, {
@@ -305,19 +308,7 @@ function PlayerCard({
                         symbol: itemValue,
                       })
                     }
-                    style={
-                      Platform.OS === 'android' ? styles.pickerAndroid : {}
-                    }
-                    itemStyle={styles.pickerItem}
-                  >
-                    {IMPACT_SYMBOLS.map(symbol => (
-                      <Picker.Item
-                        key={symbol.value}
-                        label={symbol.label}
-                        value={symbol.value}
-                      />
-                    ))}
-                  </Picker>
+                  />
                 </View>
                 <Pressable onPress={() => handleRemoveImpactSlot(index)}>
                   <MaterialCommunityIcons name="delete" size={24} color="red" />
