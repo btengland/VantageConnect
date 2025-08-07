@@ -18,12 +18,12 @@ const ExitModal = ({ isOpen, toggleModal }: ExitModalProps) => {
     >
       <View style={SharedStyles.buttonContainer}>
         <Pressable style={styles.button} onPress={() => toggleModal(false)}>
-          <CustomText style={styles.textStyle} bold>
+          <CustomText style={styles.textStyle} small bold>
             Close
           </CustomText>
         </Pressable>
         <Pressable style={styles.button} onPress={() => toggleModal(true)}>
-          <CustomText style={styles.textStyle} bold>
+          <CustomText style={styles.textStyle} small bold>
             Exit
           </CustomText>
         </Pressable>
