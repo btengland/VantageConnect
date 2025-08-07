@@ -10,7 +10,7 @@ export const CHARACTERS = [
 export const ESCAPE_PODS = ['002', '003', '004', '005', '006', '007'];
 
 export const IMPACT_SYMBOLS = [
-  { label: 'any', value: 'any' },
+  { label: 'Any', value: 'any' },
   { label: 'Heart', value: 'heart' },
   { label: 'Hourglass', value: 'timer-sand-full' },
   { label: 'Star', value: 'star' },

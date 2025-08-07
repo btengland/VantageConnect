@@ -61,7 +61,7 @@ function PlayerCard({
   const handleAddImpactSlot = () => {
     const newSlots = [
       ...player.impactDiceSlots,
-      { symbol: 'any', checked: false },
+      { symbol: 'Any', checked: false },
     ];
     onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
   };
