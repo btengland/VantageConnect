@@ -121,6 +121,11 @@ function PlayerCard({
       <ScrollView
         contentContainerStyle={[styles.card, { backgroundColor: lighterBg }]}
       >
+        {/* Header */}
+        <CustomText style={styles.sectionHeader} small bold>
+          {getOrdinal(player.id + 1)} Player
+        </CustomText>
+
         {/* Current Turn Section */}
         {player.turn && (
           <View style={styles.buttonContainer}>
@@ -142,10 +147,6 @@ function PlayerCard({
           </View>
         )}
 
-        {/* Header */}
-        <CustomText style={styles.sectionHeader} small bold>
-          {getOrdinal(player.id + 1)} Player
-        </CustomText>
         {/* Player Name */}
         <View style={styles.row}>
           <CustomText style={styles.label} small bold>

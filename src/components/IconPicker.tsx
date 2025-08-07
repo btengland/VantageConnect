@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import CustomText from './CustomText';
 
 type Option = {
   label: string;
@@ -32,10 +33,7 @@ const IconPicker = ({
 
   return (
     <>
-      <Pressable
-        style={styles.picker}
-        onPress={() => setModalVisible(true)}
-      >
+      <Pressable style={styles.picker} onPress={() => setModalVisible(true)}>
         {selectedOption?.value === 'any' ? (
           <Text style={styles.pickerText}>{selectedOption?.label}</Text>
         ) : (
@@ -71,13 +69,15 @@ const IconPicker = ({
                         setModalVisible(false);
                       }}
                     >
-                      <MaterialCommunityIcons
-                        name={item.value as any}
-                        size={24}
-                        color="black"
-                      />
+                      {item.value !== 'any' && (
+                        <MaterialCommunityIcons
+                          name={item.value as any}
+                          size={24}
+                          color="black"
+                        />
+                      )}
                       {item.value === 'any' && (
-                        <Text style={styles.optionText}>{item.label}</Text>
+                        <CustomText small>{item.label}</CustomText>
                       )}
                     </Pressable>
                   )}
@@ -97,10 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    minHeight: 60,
+    height: 70,
   },
   pickerText: {
     fontSize: 16,
@@ -128,13 +125,7 @@ const styles = StyleSheet.create({
     maxHeight: 300,
   },
   option: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 10,
-  },
-  optionText: {
-    marginLeft: 10,
-    fontSize: 16,
   },
 });
 
