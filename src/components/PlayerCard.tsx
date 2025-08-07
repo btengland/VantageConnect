@@ -14,6 +14,8 @@ import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
+import { getOrdinal, lightenColor } from '../utils';
 
 type SkillToken = {
   quantity: number;
@@ -48,17 +50,6 @@ type PlayerCardProps = {
   onUpdatePlayer: (player: Player) => void;
 };
 
-const CHARACTERS = [
-  'Jules, the Captain',
-  'Tina, the Marine',
-  'Ariel, the Engineer',
-  'Emilien, the Scholar',
-  'Ira, the Medic',
-  'Soren, the Navigator',
-];
-
-const ESCAPE_PODS = ['002', '003', '004', '005', '006', '007'];
-
 function PlayerCard({
   player,
   getCharacterColor,
@@ -67,19 +58,10 @@ function PlayerCard({
 }: PlayerCardProps) {
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
-  const IMPACT_SYMBOLS = [
-    { label: 'Any', value: 'any' },
-    { label: 'Heart', value: 'heart' },
-    { label: 'Hourglass', value: 'timer-sand-full' },
-    { label: 'Star', value: 'star' },
-    { label: 'Negative', value: 'negative' },
-    { label: 'U-Turn', value: 'uturn' },
-  ];
-
   const handleAddImpactSlot = () => {
     const newSlots = [
       ...player.impactDiceSlots,
-      { symbol: 'any', checked: false },
+      { symbol: 'Any', checked: false },
     ];
     onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
   };
@@ -109,25 +91,6 @@ function PlayerCard({
     onUpdatePlayer({ ...player, journalText: text });
   };
 
-  function lightenColor(hex: string, percent: number) {
-    // Remove hash if present
-    hex = hex.replace(/^#/, '');
-
-    // Parse r,g,b
-    const num = parseInt(hex, 16);
-    let r = (num >> 16) & 0xff;
-    let g = (num >> 8) & 0xff;
-    let b = num & 0xff;
-
-    // Increase each channel by percent towards 255
-    r = Math.min(255, Math.floor(r + (255 - r) * percent));
-    g = Math.min(255, Math.floor(g + (255 - g) * percent));
-    b = Math.min(255, Math.floor(b + (255 - b) * percent));
-
-    // Return new hex
-    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-  }
-
   const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
 
   useEffect(() => {
@@ -148,12 +111,6 @@ function PlayerCard({
       ]),
     ).start();
   }, [pulseAnim]);
-
-  const getOrdinal = (n: number) => {
-    const suffixes = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return `${n}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]}`;
-  };
 
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
