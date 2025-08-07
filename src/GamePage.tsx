@@ -39,6 +39,9 @@ const GamePage = () => {
         { quantity: 0 },
       ],
       turn: true,
+      journalText: '',
+      statuses: { heart: 1, star: 1, hourglass: 1 },
+      impactDiceSlots: [],
     },
     {
       id: 1,
@@ -55,6 +58,9 @@ const GamePage = () => {
         { quantity: 0 },
       ],
       turn: false,
+      journalText: '',
+      statuses: { heart: 1, star: 1, hourglass: 1 },
+      impactDiceSlots: [],
     },
     {
       id: 2,
@@ -71,6 +77,9 @@ const GamePage = () => {
         { quantity: 0 },
       ],
       turn: false,
+      journalText: '',
+      statuses: { heart: 1, star: 1, hourglass: 1 },
+      impactDiceSlots: [],
     },
     {
       id: 3,
@@ -87,6 +96,9 @@ const GamePage = () => {
         { quantity: 0 },
       ],
       turn: false,
+      journalText: '',
+      statuses: { heart: 1, star: 1, hourglass: 1 },
+      impactDiceSlots: [],
     },
     {
       id: 4,
@@ -103,6 +115,9 @@ const GamePage = () => {
         { quantity: 0 },
       ],
       turn: false,
+      journalText: '',
+      statuses: { heart: 1, star: 1, hourglass: 1 },
+      impactDiceSlots: [],
     },
     {
       id: 5,
@@ -119,6 +134,9 @@ const GamePage = () => {
         { quantity: 0 },
       ],
       turn: false,
+      journalText: '',
+      statuses: { heart: 1, star: 1, hourglass: 1 },
+      impactDiceSlots: [],
     },
   ]);
 
@@ -156,6 +174,12 @@ const GamePage = () => {
       }
     }
     return 'darkgray';
+  };
+
+  const handleUpdatePlayer = (updatedPlayer: any) => {
+    setPlayerInfo(
+      playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
+    );
   };
 
   return (
@@ -241,6 +265,7 @@ const GamePage = () => {
               return 'darkgray';
             }}
             skillTokenIcons={skillTokenIcons}
+            onUpdatePlayer={handleUpdatePlayer}
           />
         </View>
       </View>
