@@ -35,7 +35,15 @@ const IconPicker = ({
         style={styles.picker}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.pickerText}>{selectedOption?.label}</Text>
+        {selectedOption?.value === 'any' ? (
+          <Text style={styles.pickerText}>{selectedOption?.label}</Text>
+        ) : (
+          <MaterialCommunityIcons
+            name={selectedOption?.value as any}
+            size={24}
+            color="black"
+          />
+        )}
         <MaterialCommunityIcons name="chevron-down" size={24} color="black" />
       </Pressable>
 
@@ -47,8 +55,11 @@ const IconPicker = ({
           setModalVisible(!modalVisible);
         }}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalView}>
+        <Pressable
+          style={styles.modalContainer}
+          onPress={() => setModalVisible(false)}
+        >
+          <Pressable style={styles.modalView}>
             <FlatList
               data={options}
               keyExtractor={item => item.value}
@@ -65,12 +76,14 @@ const IconPicker = ({
                     size={24}
                     color="black"
                   />
-                  <Text style={styles.optionText}>{item.label}</Text>
+                  {item.value === 'any' && (
+                    <Text style={styles.optionText}>{item.label}</Text>
+                  )}
                 </Pressable>
               )}
             />
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </>
   );
@@ -81,10 +94,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 10,
+    padding: 15,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 4,
+    minHeight: 50,
   },
   pickerText: {
     fontSize: 16,
@@ -99,7 +113,7 @@ const styles = StyleSheet.create({
     margin: 20,
     backgroundColor: 'white',
     borderRadius: 20,
-    padding: 35,
+    padding: 10,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -109,6 +123,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    maxHeight: '80%',
   },
   option: {
     flexDirection: 'row',
