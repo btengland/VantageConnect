@@ -42,7 +42,7 @@ const JoinHostModal = ({
 
           <View style={SharedStyles.buttonContainer}>
             <Pressable style={styles.button} onPress={() => toggleModal('')}>
-              <CustomText style={styles.textStyle} bold>
+              <CustomText style={styles.textStyle} small bold>
                 Close
               </CustomText>
             </Pressable>
@@ -51,7 +51,7 @@ const JoinHostModal = ({
               style={styles.button}
               onPress={() => toggleModal('', true)}
             >
-              <CustomText style={styles.textStyle} bold>
+              <CustomText style={styles.textStyle} small bold>
                 {buttonPressed === 'join' ? 'Join' : 'Host'} Game
               </CustomText>
             </Pressable>
@@ -64,8 +64,8 @@ const JoinHostModal = ({
 
 const styles = StyleSheet.create({
   modalText: {
-    fontSize: 18,
-    marginBottom: 15,
+    fontSize: 24,
+    marginBottom: 16,
     textAlign: 'center',
   },
   textInput: {

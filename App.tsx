@@ -16,6 +16,8 @@ export default function App() {
     await Font.loadAsync({
       'Orbitron-Regular': require('./src/assets/fonts/Orbitron-Regular.ttf'),
       'Orbitron-Bold': require('./src/assets/fonts/Orbitron-Bold.ttf'),
+      'Roboto-Regular': require('./src/assets/fonts/Roboto-Regular.ttf'),
+      'Roboto-Bold': require('./src/assets/fonts/Roboto-Bold.ttf'),
     });
     setFontsLoaded(true);
   };

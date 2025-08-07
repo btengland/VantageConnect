@@ -188,7 +188,6 @@ function PlayerCard({
         <CustomText style={styles.sectionHeader} bold>
           {getOrdinal(player.id + 1)} Player
         </CustomText>
-
         {/* Player Name */}
         <View style={styles.row}>
           <CustomText style={styles.label} bold>
@@ -214,7 +213,6 @@ function PlayerCard({
             </Picker>
           </View>
         </View>
-
         {/* Escape Pod Picker */}
         <View style={styles.row}>
           <CustomText style={styles.label} bold>
@@ -506,9 +504,8 @@ const styles = StyleSheet.create({
   },
   locationInput: {
     width: 90,
-    fontWeight: '900',
     fontSize: 38,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: 'Roboto-Bold',
     backgroundColor: 'transparent',
     textAlign: 'center',
     paddingVertical: 0,
@@ -527,6 +524,7 @@ const styles = StyleSheet.create({
   },
   pickerItem: {
     fontSize: 14,
+    fontFamily: 'Roboto-Regular',
   },
 
   // TURN STATUS
@@ -555,8 +553,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#a5f0a8',
   },
   turnText: {
-    fontSize: 16,
-    color: '#333',
     textAlign: 'center',
   },
 

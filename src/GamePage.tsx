@@ -197,7 +197,9 @@ const GamePage = () => {
 
         {/* Header */}
         <View style={styles.diceContainer}>
-          <CustomText style={styles.mainText}>Available Dice:</CustomText>
+          <CustomText style={styles.mainText} bold>
+            Available Dice:
+          </CustomText>
           <View style={styles.diceControl}>
             <Pressable
               onPress={() => setChallengeDice(prev => Math.max(0, prev - 1))}
