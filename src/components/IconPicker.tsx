@@ -48,14 +48,13 @@ const IconPicker = ({
 
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-        }}
+        onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent
       >
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalContainer}>
+          <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalView}>
                 <FlatList
@@ -69,14 +68,13 @@ const IconPicker = ({
                         setModalVisible(false);
                       }}
                     >
-                      {item.value !== 'any' && (
+                      {item.value !== 'any' ? (
                         <MaterialCommunityIcons
                           name={item.value as any}
                           size={24}
                           color="black"
                         />
-                      )}
-                      {item.value === 'any' && (
+                      ) : (
                         <CustomText small>{item.label}</CustomText>
                       )}
                     </Pressable>
@@ -102,30 +100,27 @@ const styles = StyleSheet.create({
   pickerText: {
     fontSize: 16,
   },
-  modalContainer: {
-    ...StyleSheet.absoluteFillObject,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalView: {
-    margin: 20,
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 10,
-    alignItems: 'center',
+    width: '20%',
+    maxHeight: '80%',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    maxHeight: 300,
   },
   option: {
     padding: 10,
+    alignItems: 'center',
   },
 });
 
