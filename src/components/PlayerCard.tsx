@@ -133,7 +133,7 @@ function PlayerCard({
 
       {/* Player Name */}
       <View style={styles.row}>
-        <CustomText style={styles.label} bold>
+        <CustomText style={styles.label} bold small>
           Player Name:
         </CustomText>
         <TextInput style={styles.value} value={player.name} />
@@ -141,7 +141,7 @@ function PlayerCard({
 
       {/* Character Picker */}
       <View style={styles.row}>
-        <CustomText style={styles.label} bold>
+        <CustomText style={styles.label} bold small>
           Character:
         </CustomText>
         <View style={styles.pickerWrapper}>
@@ -157,7 +157,7 @@ function PlayerCard({
 
       {/* Escape Pod Picker */}
       <View style={styles.row}>
-        <CustomText style={styles.label} bold>
+        <CustomText style={styles.label} bold small>
           Escape Pod:
         </CustomText>
         <View style={styles.pickerWrapper}>
@@ -327,9 +327,8 @@ const styles = StyleSheet.create({
   },
   locationInput: {
     width: 90,
-    fontWeight: '900',
     fontSize: 38,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: 'Roboto-Bold',
     backgroundColor: 'transparent',
     textAlign: 'center',
     paddingVertical: 0,
@@ -348,6 +347,7 @@ const styles = StyleSheet.create({
   },
   pickerItem: {
     fontSize: 14,
+    fontFamily: 'Roboto-Regular',
   },
 
   // TURN STATUS
