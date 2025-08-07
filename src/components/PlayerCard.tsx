@@ -114,12 +114,12 @@ function PlayerCard({
               player.turn && styles.myTurnBackground,
             ]}
           >
-            <CustomText style={styles.turnText} bold>
+            <CustomText style={styles.turnText} small bold>
               It's your turn
             </CustomText>
           </View>
           <Pressable>
-            <CustomText style={SharedStyles.button} bold>
+            <CustomText style={SharedStyles.button} small bold>
               Done
             </CustomText>
           </Pressable>
@@ -127,13 +127,13 @@ function PlayerCard({
       )}
 
       {/* Header */}
-      <CustomText style={styles.sectionHeader} bold>
+      <CustomText style={styles.sectionHeader} small bold>
         {getOrdinal(player.id + 1)} Player
       </CustomText>
 
       {/* Player Name */}
       <View style={styles.row}>
-        <CustomText style={styles.label} bold small>
+        <CustomText style={styles.label} small bold>
           Player Name:
         </CustomText>
         <TextInput style={styles.value} value={player.name} />
@@ -141,7 +141,7 @@ function PlayerCard({
 
       {/* Character Picker */}
       <View style={styles.row}>
-        <CustomText style={styles.label} bold small>
+        <CustomText style={styles.label} small bold>
           Character:
         </CustomText>
         <View style={styles.pickerWrapper}>
@@ -157,7 +157,7 @@ function PlayerCard({
 
       {/* Escape Pod Picker */}
       <View style={styles.row}>
-        <CustomText style={styles.label} bold small>
+        <CustomText style={styles.label} small bold>
           Escape Pod:
         </CustomText>
         <View style={styles.pickerWrapper}>
@@ -173,7 +173,7 @@ function PlayerCard({
 
       {/* Current Location */}
       <View style={styles.locationContainer}>
-        <CustomText style={styles.subHeader} bold>
+        <CustomText style={styles.subHeader} small bold>
           Current Location
         </CustomText>
         <Animated.View
@@ -210,7 +210,7 @@ function PlayerCard({
 
       {/* Skill Tokens */}
       <View style={{ marginTop: 16 }}>
-        <CustomText style={styles.subHeader} bold>
+        <CustomText style={styles.subHeader} small bold>
           Skill Tokens
         </CustomText>
         <View style={styles.skillTokenGrid}>
@@ -247,7 +247,7 @@ function PlayerCard({
 
       {/* Impact Dice Grid */}
       <View style={{ marginTop: 16 }}>
-        <CustomText style={styles.subHeader} bold>
+        <CustomText style={styles.subHeader} small bold>
           Impact Dice Slots in Card Grid
         </CustomText>
         <View style={styles.grid} />
@@ -255,7 +255,7 @@ function PlayerCard({
 
       {/* Status Box */}
       <View style={{ marginTop: 16 }}>
-        <CustomText style={styles.subHeader} bold>
+        <CustomText style={styles.subHeader} small bold>
           Status Updates
         </CustomText>
         <View style={styles.statusBox} />
@@ -263,7 +263,7 @@ function PlayerCard({
 
       {/* Journal */}
       <View style={{ marginTop: 16 }}>
-        <CustomText style={styles.subHeader} bold>
+        <CustomText style={styles.subHeader} small bold>
           Journal
         </CustomText>
         <View style={styles.journalBox} />
@@ -376,8 +376,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#a5f0a8',
   },
   turnText: {
-    fontSize: 16,
-    color: '#333',
     textAlign: 'center',
   },
 

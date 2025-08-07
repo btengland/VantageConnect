@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontSize: 18,
-    marginBottom: 15,
+    marginBottom: 8,
     textAlign: 'center',
   },
 });

@@ -9,31 +9,39 @@ type CustomTextProps = TextProps & {
 function CustomText(props: CustomTextProps) {
   const { style, bold = false, small = false, ...rest } = props;
 
-  return (
-    <Text
-      {...rest}
-      style={[
-        styles.text,
-        bold && styles.bold,
-        small && styles.small,
-        style as TextStyle,
-      ]}
-    />
-  );
+  let textStyle: TextStyle[] = [styles.text];
+
+  if (small && bold) {
+    textStyle.push(styles.smallBold);
+  } else if (small) {
+    textStyle.push(styles.small);
+  } else if (bold) {
+    textStyle.push(styles.bold);
+  }
+
+  if (style) {
+    textStyle.push(style as TextStyle);
+  }
+
+  return <Text {...rest} style={textStyle} />;
 }
 
 const styles = StyleSheet.create({
   text: {
     fontFamily: 'Orbitron-Regular',
-    fontSize: 16,
-    color: '#000',
+    fontSize: 20,
   },
   bold: {
     fontFamily: 'Orbitron-Bold',
+    fontSize: 20,
   },
   small: {
     fontFamily: 'Roboto-Regular',
-    fontSize: 14,
+    fontSize: 18,
+  },
+  smallBold: {
+    fontFamily: 'Roboto-Bold',
+    fontSize: 18,
   },
 });
 
