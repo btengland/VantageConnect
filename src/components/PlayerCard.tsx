@@ -9,6 +9,7 @@ import {
   Animated,
   Image,
   Easing,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
@@ -117,307 +118,317 @@ function PlayerCard({
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
   return (
-    <View style={styles.cardContainer}>
-      <ScrollView
-        contentContainerStyle={[styles.card, { backgroundColor: lighterBg }]}
-      >
-        {/* Header */}
-        <CustomText style={styles.sectionHeader} small bold>
-          {getOrdinal(player.id + 1)} Player
-        </CustomText>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={150}
+    >
+      <View style={styles.cardContainer}>
+        <ScrollView
+          contentContainerStyle={[styles.card, { backgroundColor: lighterBg }]}
+        >
+          {/* Header */}
+          <CustomText style={styles.sectionHeader} small bold>
+            {getOrdinal(player.id + 1)} Player
+          </CustomText>
 
-        {/* Current Turn Section */}
-        {player.turn && (
-          <View style={styles.buttonContainer}>
-            <View
+          {/* Current Turn Section */}
+          {player.turn && (
+            <View style={styles.buttonContainer}>
+              <View
+                style={[
+                  styles.turnTextContainer,
+                  player.turn && styles.myTurnBackground,
+                ]}
+              >
+                <CustomText style={styles.turnText} small bold>
+                  It's your turn
+                </CustomText>
+              </View>
+              <Pressable>
+                <CustomText style={SharedStyles.button} small bold>
+                  Done
+                </CustomText>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Player Name */}
+          <View style={styles.row}>
+            <CustomText style={styles.label} small bold>
+              Player Name:
+            </CustomText>
+            <TextInput
+              style={styles.value}
+              value={player.name}
+              placeholder="Enter your name"
+            />
+          </View>
+
+          {/* Character Picker */}
+          <View style={styles.row}>
+            <CustomText style={styles.label} small bold>
+              Character:
+            </CustomText>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={player.character}
+                style={
+                  Platform.OS === 'android' ? styles.pickerAndroid : undefined
+                }
+                itemStyle={styles.pickerItem}
+              >
+                {renderPickerItems(CHARACTERS)}
+              </Picker>
+            </View>
+          </View>
+          {/* Escape Pod Picker */}
+          <View style={styles.row}>
+            <CustomText style={styles.label} small bold>
+              Escape Pod:
+            </CustomText>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={player.escapePod}
+                style={
+                  Platform.OS === 'android' ? styles.pickerAndroid : undefined
+                }
+                itemStyle={styles.pickerItem}
+              >
+                {renderPickerItems(ESCAPE_PODS)}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Current Location */}
+          <View style={styles.locationContainer}>
+            <CustomText style={styles.subHeader} small bold>
+              Current Location
+            </CustomText>
+            <Animated.View
               style={[
-                styles.turnTextContainer,
-                player.turn && styles.myTurnBackground,
+                styles.locationInputWrapper,
+                {
+                  shadowOpacity: pulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.3, 0.8],
+                  }),
+                  shadowRadius: pulseAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [5, 15],
+                  }),
+                  transform: [
+                    {
+                      scale: pulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.05],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              <CustomText style={styles.turnText} small bold>
-                It's your turn
-              </CustomText>
-            </View>
-            <Pressable>
-              <CustomText style={SharedStyles.button} small bold>
-                Done
-              </CustomText>
-            </Pressable>
+              <TextInput
+                keyboardType="number-pad"
+                maxLength={3}
+                style={[styles.locationInput, { color: lighterBg }]}
+                value={player.location}
+              />
+            </Animated.View>
           </View>
-        )}
 
-        {/* Player Name */}
-        <View style={styles.row}>
-          <CustomText style={styles.label} small bold>
-            Player Name:
-          </CustomText>
-          <TextInput
-            style={styles.value}
-            value={player.name}
-            placeholder="Enter your name"
-          />
-        </View>
-
-        {/* Character Picker */}
-        <View style={styles.row}>
-          <CustomText style={styles.label} small bold>
-            Character:
-          </CustomText>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={player.character}
-              style={
-                Platform.OS === 'android' ? styles.pickerAndroid : undefined
-              }
-              itemStyle={styles.pickerItem}
-            >
-              {renderPickerItems(CHARACTERS)}
-            </Picker>
-          </View>
-        </View>
-        {/* Escape Pod Picker */}
-        <View style={styles.row}>
-          <CustomText style={styles.label} small bold>
-            Escape Pod:
-          </CustomText>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={player.escapePod}
-              style={
-                Platform.OS === 'android' ? styles.pickerAndroid : undefined
-              }
-              itemStyle={styles.pickerItem}
-            >
-              {renderPickerItems(ESCAPE_PODS)}
-            </Picker>
-          </View>
-        </View>
-
-        {/* Current Location */}
-        <View style={styles.locationContainer}>
-          <CustomText style={styles.subHeader} small bold>
-            Current Location
-          </CustomText>
-          <Animated.View
-            style={[
-              styles.locationInputWrapper,
-              {
-                shadowOpacity: pulseAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.3, 0.8],
-                }),
-                shadowRadius: pulseAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [5, 15],
-                }),
-                transform: [
-                  {
-                    scale: pulseAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 1.05],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <TextInput
-              keyboardType="number-pad"
-              maxLength={3}
-              style={[styles.locationInput, { color: lighterBg }]}
-              value={player.location}
-            />
-          </Animated.View>
-        </View>
-
-        {/* Skill Tokens */}
-        <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} small bold>
-            Skill Tokens
-          </CustomText>
-          <View style={styles.skillTokenGrid}>
-            {player.skillTokens.map((token, index) => (
-              <View key={index} style={styles.skillTokenBox}>
-                <View style={styles.iconBox}>
-                  <View style={styles.tokenContent}>
-                    <View style={styles.tokenIcon}>
-                      <View style={styles.iconWrapper}>
-                        <Image
-                          source={skillTokenIcons[index]}
-                          style={{ width: 30, height: 30 }}
-                          resizeMode="contain"
-                        />
+          {/* Skill Tokens */}
+          <View style={{ marginTop: 16 }}>
+            <CustomText style={styles.subHeader} small bold>
+              Skill Tokens
+            </CustomText>
+            <View style={styles.skillTokenGrid}>
+              {player.skillTokens.map((token, index) => (
+                <View key={index} style={styles.skillTokenBox}>
+                  <View style={styles.iconBox}>
+                    <View style={styles.tokenContent}>
+                      <View style={styles.tokenIcon}>
+                        <View style={styles.iconWrapper}>
+                          <Image
+                            source={skillTokenIcons[index]}
+                            style={{ width: 30, height: 30 }}
+                            resizeMode="contain"
+                          />
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.counterContainer}>
-                      <Pressable style={styles.tokenButton}>
-                        <CustomText style={styles.tokenButtonText}>
-                          -
+                      <View style={styles.counterContainer}>
+                        <Pressable style={styles.tokenButton}>
+                          <CustomText style={styles.tokenButtonText}>
+                            -
+                          </CustomText>
+                        </Pressable>
+                        <CustomText style={styles.tokenQuantity}>
+                          {token.quantity}
                         </CustomText>
-                      </Pressable>
-                      <CustomText style={styles.tokenQuantity}>
-                        {token.quantity}
-                      </CustomText>
-                      <Pressable style={styles.tokenButton}>
-                        <CustomText style={styles.tokenButtonText}>
-                          +
-                        </CustomText>
-                      </Pressable>
+                        <Pressable style={styles.tokenButton}>
+                          <CustomText style={styles.tokenButtonText}>
+                            +
+                          </CustomText>
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Impact Dice Grid */}
-        <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} small bold>
-            Impact Dice Slots
-          </CustomText>
-          <View style={styles.impactGrid}>
-            {player.impactDiceSlots.map((slot, index) => (
-              <View key={index} style={styles.impactSlot}>
-                <Pressable
-                  onPress={() =>
-                    handleUpdateImpactSlot(index, {
-                      ...slot,
-                      checked: !slot.checked,
-                    })
-                  }
-                >
-                  <MaterialCommunityIcons
-                    name={
-                      slot.checked
-                        ? 'checkbox-marked'
-                        : 'checkbox-blank-outline'
-                    }
-                    size={24}
-                    color="black"
-                  />
-                </Pressable>
-                <View style={styles.pickerWrapperImpact}>
-                  <IconPicker
-                    options={IMPACT_SYMBOLS}
-                    selectedValue={slot.symbol}
-                    onValueChange={itemValue =>
+          {/* Impact Dice Grid */}
+          <View style={{ marginTop: 16 }}>
+            <CustomText style={styles.subHeader} small bold>
+              Impact Dice Slots
+            </CustomText>
+            <View style={styles.impactGrid}>
+              {player.impactDiceSlots.map((slot, index) => (
+                <View key={index} style={styles.impactSlot}>
+                  <Pressable
+                    onPress={() =>
                       handleUpdateImpactSlot(index, {
                         ...slot,
-                        symbol: itemValue,
+                        checked: !slot.checked,
                       })
                     }
-                  />
+                  >
+                    <MaterialCommunityIcons
+                      name={
+                        slot.checked
+                          ? 'checkbox-marked'
+                          : 'checkbox-blank-outline'
+                      }
+                      size={24}
+                      color="black"
+                    />
+                  </Pressable>
+                  <View style={styles.pickerWrapperImpact}>
+                    <IconPicker
+                      options={IMPACT_SYMBOLS}
+                      selectedValue={slot.symbol}
+                      onValueChange={itemValue =>
+                        handleUpdateImpactSlot(index, {
+                          ...slot,
+                          symbol: itemValue,
+                        })
+                      }
+                    />
+                  </View>
+                  <Pressable onPress={() => handleRemoveImpactSlot(index)}>
+                    <MaterialCommunityIcons
+                      name="delete"
+                      size={24}
+                      color="red"
+                    />
+                  </Pressable>
                 </View>
-                <Pressable onPress={() => handleRemoveImpactSlot(index)}>
-                  <MaterialCommunityIcons name="delete" size={24} color="red" />
-                </Pressable>
-              </View>
-            ))}
+              ))}
+            </View>
+            <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
+              <MaterialCommunityIcons name="flash" size={24} color="white" />
+              <CustomText style={styles.addButtonText}>Add Slot</CustomText>
+            </Pressable>
           </View>
-          <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
-            <MaterialCommunityIcons name="flash" size={24} color="white" />
-            <CustomText style={styles.addButtonText}>Add Slot</CustomText>
-          </Pressable>
-        </View>
 
-        {/* Status Box */}
-        <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} small bold>
-            Status Updates
-          </CustomText>
-          <View style={styles.statusContainer}>
-            {['heart', 'star', 'timer-sand-full'].map(status => (
-              <View key={status} style={styles.statusRow}>
-                <MaterialCommunityIcons
-                  name={status as any}
-                  size={30}
-                  color="black"
-                />
-                <View style={styles.statusTrack}>
-                  {[...Array(6)].map((_, i) => (
+          {/* Status Box */}
+          <View style={{ marginTop: 16 }}>
+            <CustomText style={styles.subHeader} small bold>
+              Status Updates
+            </CustomText>
+            <View style={styles.statusContainer}>
+              {['heart', 'star', 'timer-sand-full'].map(status => (
+                <View key={status} style={styles.statusRow}>
+                  <MaterialCommunityIcons
+                    name={status as any}
+                    size={30}
+                    color="black"
+                  />
+                  <View style={styles.statusTrack}>
+                    {[...Array(6)].map((_, i) => (
+                      <Pressable
+                        key={i}
+                        onPress={() => {
+                          const newStatuses = {
+                            ...player.statuses,
+                            [status]: i + 1,
+                          };
+                          onUpdatePlayer({ ...player, statuses: newStatuses });
+                        }}
+                      >
+                        <View
+                          style={[
+                            styles.statusDot,
+                            i <
+                            player.statuses[
+                              status as 'heart' | 'star' | 'timer-sand-full'
+                            ]
+                              ? styles.statusDotFilled
+                              : {},
+                          ]}
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                  <View style={styles.statusControls}>
                     <Pressable
-                      key={i}
-                      onPress={() => {
-                        const newStatuses = {
-                          ...player.statuses,
-                          [status]: i + 1,
-                        };
-                        onUpdatePlayer({ ...player, statuses: newStatuses });
-                      }}
+                      onPress={() =>
+                        handleStatusChange(
+                          status as 'heart' | 'star' | 'timer-sand-full',
+                          -1,
+                        )
+                      }
                     >
-                      <View
-                        style={[
-                          styles.statusDot,
-                          i <
-                          player.statuses[
-                            status as 'heart' | 'star' | 'timer-sand-full'
-                          ]
-                            ? styles.statusDotFilled
-                            : {},
-                        ]}
+                      <MaterialCommunityIcons
+                        name="minus"
+                        size={30}
+                        color="black"
                       />
                     </Pressable>
-                  ))}
+                    <CustomText style={styles.statusLevel}>
+                      {
+                        player.statuses[
+                          status as 'heart' | 'star' | 'timer-sand-full'
+                        ]
+                      }
+                    </CustomText>
+                    <Pressable
+                      onPress={() =>
+                        handleStatusChange(
+                          status as 'heart' | 'star' | 'timer-sand-full',
+                          1,
+                        )
+                      }
+                    >
+                      <MaterialCommunityIcons
+                        name="plus"
+                        size={30}
+                        color="black"
+                      />
+                    </Pressable>
+                  </View>
                 </View>
-                <View style={styles.statusControls}>
-                  <Pressable
-                    onPress={() =>
-                      handleStatusChange(
-                        status as 'heart' | 'star' | 'timer-sand-full',
-                        -1,
-                      )
-                    }
-                  >
-                    <MaterialCommunityIcons
-                      name="minus"
-                      size={30}
-                      color="black"
-                    />
-                  </Pressable>
-                  <CustomText style={styles.statusLevel}>
-                    {
-                      player.statuses[
-                        status as 'heart' | 'star' | 'timer-sand-full'
-                      ]
-                    }
-                  </CustomText>
-                  <Pressable
-                    onPress={() =>
-                      handleStatusChange(
-                        status as 'heart' | 'star' | 'timer-sand-full',
-                        1,
-                      )
-                    }
-                  >
-                    <MaterialCommunityIcons
-                      name="plus"
-                      size={30}
-                      color="black"
-                    />
-                  </Pressable>
-                </View>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Journal */}
-        <View style={{ marginTop: 16 }}>
-          <CustomText style={styles.subHeader} small bold>
-            Journal
-          </CustomText>
-          <TextInput
-            style={styles.journalInput}
-            multiline
-            onChangeText={handleJournalChange}
-            value={player.journalText}
-            placeholder="Write your notes here..."
-          />
-        </View>
-      </ScrollView>
-    </View>
+          {/* Journal */}
+          <View style={{ marginTop: 16 }}>
+            <CustomText style={styles.subHeader} small bold>
+              Journal
+            </CustomText>
+            <TextInput
+              style={styles.journalInput}
+              multiline
+              onChangeText={handleJournalChange}
+              value={player.journalText}
+              placeholder="Write your notes here..."
+            />
+          </View>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -610,7 +621,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   journalInput: {
-    height: 120,
+    height: 300,
     backgroundColor: '#f0f0f0',
     borderRadius: 6,
     padding: 10,
