@@ -4,6 +4,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  Linking,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import JoinHostModal from './components/JoinHostModal';
@@ -28,7 +30,12 @@ const HomePage = () => {
     }
   };
 
-  const spaceImage = require('./assets/spaceImage.jpg');
+  const spaceImage = require('./assets/SpaceImage.jpg');
+  const discordLogo = require('./assets/DiscordLogo.png');
+
+  const openDiscord = () => {
+    Linking.openURL('https://stonemaiergames.com/discord/');
+  };
 
   return (
     <ImageBackground
@@ -37,6 +44,10 @@ const HomePage = () => {
       resizeMode="cover"
     >
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+
+      <TouchableOpacity style={styles.discordButton} onPress={openDiscord}>
+        <Image source={discordLogo} style={styles.discordLogo} />
+      </TouchableOpacity>
 
       <View style={styles.container}>
         <CustomText style={styles.title} bold>
@@ -76,6 +87,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  discordButton: {
+    position: 'absolute',
+    top: 55,
+    right: 30,
+    zIndex: 10,
+  },
+  discordLogo: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
   },
   container: {
     alignItems: 'center',
