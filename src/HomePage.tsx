@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
   },
   discordButton: {
     position: 'absolute',
-    top: 50,
-    right: 20,
+    top: 55,
+    right: 30,
     zIndex: 10,
   },
   discordLogo: {
