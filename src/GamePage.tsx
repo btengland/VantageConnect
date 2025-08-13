@@ -19,127 +19,25 @@ const GamePage = () => {
     require('./assets/Overpower.png'),
   ];
 
+  type SkillToken = { quantity: number };
+  type Statuses = { heart: number; star: number; 'timer-sand-full': number };
+  type Player = {
+    id: string;
+    name: string;
+    character: string;
+    escapePod: string;
+    location: string;
+    skillTokens: SkillToken[];
+    turn: boolean;
+    journalText: string;
+    statuses: Statuses;
+    impactDiceSlots: any[];
+  };
+
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
-  const [viewedPlayer, setViewedPlayer] = useState(0);
-
-  // Player skillTokens only store quantities now
-  const [playerInfo, setPlayerInfo] = useState([
-    {
-      id: 0,
-      name: 'John',
-      character: 'Jules, the Captain',
-      escapePod: 'Delta',
-      location: '123',
-      skillTokens: [
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-      ],
-      turn: true,
-      journalText: '',
-      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
-      impactDiceSlots: [],
-    },
-    {
-      id: 1,
-      name: 'Jones',
-      character: 'Tina, the Marine',
-      escapePod: 'Delta',
-      location: '123',
-      skillTokens: [
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-      ],
-      turn: false,
-      journalText: '',
-      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
-      impactDiceSlots: [],
-    },
-    {
-      id: 2,
-      name: 'Richard',
-      character: 'Ariel, the Engineer',
-      escapePod: 'Delta',
-      location: '123',
-      skillTokens: [
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-      ],
-      turn: false,
-      journalText: '',
-      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
-      impactDiceSlots: [],
-    },
-    {
-      id: 3,
-      name: 'Sarah',
-      character: 'Emilien, the Scholar',
-      escapePod: 'Delta',
-      location: '123',
-      skillTokens: [
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-      ],
-      turn: false,
-      journalText: '',
-      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
-      impactDiceSlots: [],
-    },
-    {
-      id: 4,
-      name: 'Linda',
-      character: 'Ira, the Medic',
-      escapePod: 'Delta',
-      location: '123',
-      skillTokens: [
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-      ],
-      turn: false,
-      journalText: '',
-      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
-      impactDiceSlots: [],
-    },
-    {
-      id: 5,
-      name: 'Alex',
-      character: 'Soren, the Navigator',
-      escapePod: 'Delta',
-      location: '123',
-      skillTokens: [
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-        { quantity: 0 },
-      ],
-      turn: false,
-      journalText: '',
-      statuses: { heart: 1, star: 1, 'timer-sand-full': 1 },
-      impactDiceSlots: [],
-    },
-  ]);
+  const [viewedPlayer, setViewedPlayer] = useState('');
+  const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -230,7 +128,7 @@ const GamePage = () => {
 
           {/* Player Card */}
           <PlayerCard
-            player={playerInfo[viewedPlayer]}
+            player={playerInfo.find(p => p.id === viewedPlayer)!}
             getCharacterColor={getCharacterColor}
             skillTokenIcons={skillTokenIcons}
             onUpdatePlayer={handleUpdatePlayer}
