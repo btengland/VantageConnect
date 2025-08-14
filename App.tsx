@@ -7,7 +7,12 @@ import { View, ActivityIndicator } from 'react-native';
 import HomePage from './src/HomePage';
 import GamePage from './src/GamePage';
 
-const Stack = createNativeStackNavigator();
+export type RootStackParamList = {
+  Home: undefined;
+  Game: { sessionId: string };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
