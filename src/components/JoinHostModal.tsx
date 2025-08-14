@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
-import { Modal, Pressable, View, StyleSheet, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  Pressable,
+  View,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { SharedStyles } from './SharedStyles';
-import CustomText from './CustomText'; // import CustomText
+import CustomText from './CustomText';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
+import { webSocketManager } from '../api/websocket';
 
 type JoinHostModalProps = {
   isOpen: boolean;
@@ -14,48 +26,117 @@ const JoinHostModal = ({
   toggleModal,
   buttonPressed,
 }: JoinHostModalProps) => {
-  const [text, setText] = useState('');
+  const [roomNumber, setRoomNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsLoading(false);
+      setRoomNumber('');
+    }
+  }, [isOpen]);
+
+  const handleJoin = () => {
+    if (roomNumber && roomNumber.length === 6) {
+      toggleModal('');
+      navigation.navigate('Game', { sessionId: roomNumber });
+    } else {
+      Alert.alert('Invalid Code', 'Please enter a valid 6-digit room code.');
+    }
+  };
+
+  const handleHost = async () => {
+    setIsLoading(true);
+    try {
+      webSocketManager.onMessage(data => {
+        if (data.action === 'sessionCreated' && data.sessionId) {
+          webSocketManager.disconnect();
+          setIsLoading(false);
+          toggleModal('');
+          navigation.navigate('Game', { sessionId: data.sessionId });
+        }
+      });
+
+      await webSocketManager.connect();
+      webSocketManager.sendMessage({ action: 'createSession' });
+    } catch (error) {
+      console.error('Failed to host session:', error);
+      Alert.alert(
+        'Error',
+        'Could not create a game session. Please try again.',
+      );
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    toggleModal('');
+    if (isLoading) {
+      webSocketManager.disconnect();
+    }
+  };
+
+  const handlePrimaryAction = () => {
+    if (buttonPressed === 'host') {
+      handleHost();
+    } else {
+      handleJoin();
+    }
+  };
 
   return (
     <Modal
       animationType="slide"
       transparent={true}
       visible={isOpen}
-      onRequestClose={() => toggleModal('')}
+      onRequestClose={handleClose}
     >
       <View style={SharedStyles.flexCenter}>
         <View style={SharedStyles.modalView}>
-          <CustomText style={styles.modalText} bold>
-            {buttonPressed === 'join' ? 'Join' : 'Host'} a Game
-          </CustomText>
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#000" />
+          ) : (
+            <>
+              <CustomText style={styles.modalText} bold>
+                {buttonPressed === 'join' ? 'Join' : 'Host'} a Game
+              </CustomText>
 
-          {buttonPressed === 'join' && (
-            <TextInput
-              style={styles.textInput}
-              onChangeText={setText}
-              value={text}
-              placeholder={'Enter six digit code'}
-              keyboardType="number-pad"
-              maxLength={6}
-            />
+              {buttonPressed === 'join' && (
+                <TextInput
+                  style={styles.textInput}
+                  onChangeText={setRoomNumber}
+                  value={roomNumber}
+                  placeholder={'Enter six digit code'}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+              )}
+
+              <View style={SharedStyles.buttonContainer}>
+                <Pressable
+                  style={styles.button}
+                  onPress={handleClose}
+                  disabled={isLoading}
+                >
+                  <CustomText style={styles.textStyle} small bold>
+                    Close
+                  </CustomText>
+                </Pressable>
+
+                <Pressable
+                  style={styles.button}
+                  onPress={handlePrimaryAction}
+                  disabled={isLoading}
+                >
+                  <CustomText style={styles.textStyle} small bold>
+                    {buttonPressed === 'join' ? 'Join' : 'Host'} Game
+                  </CustomText>
+                </Pressable>
+              </View>
+            </>
           )}
-
-          <View style={SharedStyles.buttonContainer}>
-            <Pressable style={styles.button} onPress={() => toggleModal('')}>
-              <CustomText style={styles.textStyle} small bold>
-                Close
-              </CustomText>
-            </Pressable>
-
-            <Pressable
-              style={styles.button}
-              onPress={() => toggleModal('', true)}
-            >
-              <CustomText style={styles.textStyle} small bold>
-                {buttonPressed === 'join' ? 'Join' : 'Host'} Game
-              </CustomText>
-            </Pressable>
-          </View>
         </View>
       </View>
     </Modal>

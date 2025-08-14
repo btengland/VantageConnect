@@ -20,14 +20,9 @@ const HomePage = () => {
 
   const isDarkMode = useColorScheme() === 'light';
 
-  const toggleModal = (type: string, navigate?: boolean) => {
+  const toggleModal = (type: string) => {
     setButtonPressed(type);
     setOpen(type !== '');
-
-    if (navigate) {
-      (navigation as any).navigate('Game');
-      setOpen(false);
-    }
   };
 
   const spaceImage = require('./assets/SpaceImage.jpg');

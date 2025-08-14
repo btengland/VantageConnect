@@ -18,101 +18,92 @@ import IconPicker from './IconPicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
 import { getOrdinal, lightenColor } from '../utils';
-
-type SkillToken = {
-  quantity: number;
-};
-
-type ImpactDiceSlot = {
-  symbol: string;
-  checked: boolean;
-};
-
-type Player = {
-  id: string;
-  name: string;
-  character: string;
-  escapePod: string;
-  location: string;
-  skillTokens: SkillToken[];
-  turn: boolean;
-  journalText: string;
-  statuses: {
-    heart: number;
-    star: number;
-    'timer-sand-full': number;
-  };
-  impactDiceSlots: ImpactDiceSlot[];
-};
+import { Player, ImpactDiceSlot, SkillToken } from '../types';
 
 type PlayerCardProps = {
   player: Player;
+  isSelf: boolean;
   getCharacterColor: (characterText: string) => string;
   skillTokenIcons: any[];
   onUpdatePlayer: (player: Player) => void;
+  onNextTurn: () => void;
 };
 
 function PlayerCard({
   player,
+  isSelf,
   getCharacterColor,
   skillTokenIcons,
   onUpdatePlayer,
+  onNextTurn,
 }: PlayerCardProps) {
   const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  const handleUpdate = (field: keyof Player, value: any) => {
+    onUpdatePlayer({ ...player, [field]: value });
+  };
 
   const handleAddImpactSlot = () => {
     const newSlots = [
       ...player.impactDiceSlots,
       { symbol: 'any', checked: false },
     ];
-    onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
+    handleUpdate('impactDiceSlots', newSlots);
   };
 
   const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
     const newSlots = [...player.impactDiceSlots];
     newSlots[index] = newSlot;
-    onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
+    handleUpdate('impactDiceSlots', newSlots);
   };
 
   const handleRemoveImpactSlot = (index: number) => {
     const newSlots = player.impactDiceSlots.filter((_, i) => i !== index);
-    onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
+    handleUpdate('impactDiceSlots', newSlots);
   };
 
   const handleStatusChange = (
     status: 'heart' | 'star' | 'timer-sand-full',
-    change: 1 | -1,
+    change: number,
   ) => {
     const currentLevel = player.statuses[status];
     const newLevel = Math.max(0, Math.min(6, currentLevel + change));
     const newStatuses = { ...player.statuses, [status]: newLevel };
-    onUpdatePlayer({ ...player, statuses: newStatuses });
+    handleUpdate('statuses', newStatuses);
   };
 
-  const handleJournalChange = (text: string) => {
-    onUpdatePlayer({ ...player, journalText: text });
-  };
+  const handleSkillTokenChange = (index: number, change: number) => {
+      const newTokens = [...player.skillTokens];
+      const currentQuantity = newTokens[index].quantity;
+      newTokens[index] = { quantity: Math.max(0, currentQuantity + change) };
+      handleUpdate('skillTokens', newTokens);
+  }
 
   const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ]),
-    ).start();
-  }, [pulseAnim]);
+    if (player.turn && isSelf) {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 1500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 0,
+              duration: 1500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+          ]),
+        ).start();
+    } else {
+        pulseAnim.stopAnimation();
+        pulseAnim.setValue(0);
+    }
+  }, [pulseAnim, player.turn, isSelf]);
 
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
@@ -127,33 +118,27 @@ function PlayerCard({
         <ScrollView
           contentContainerStyle={[styles.card, { backgroundColor: lighterBg }]}
         >
-          {/* Header */}
           <CustomText style={styles.sectionHeader} small bold>
-            {getOrdinal(Number(player.id) + 1)} Player
+            {player.name}'s Card
           </CustomText>
 
-          {/* Current Turn Section */}
           {player.turn && (
             <View style={styles.buttonContainer}>
-              <View
-                style={[
-                  styles.turnTextContainer,
-                  player.turn && styles.myTurnBackground,
-                ]}
-              >
+              <View style={[ styles.turnTextContainer, isSelf && styles.myTurnBackground ]}>
                 <CustomText style={styles.turnText} small bold>
-                  It's your turn
+                  {isSelf ? "It's your turn" : `It's ${player.name}'s turn`}
                 </CustomText>
               </View>
-              <Pressable>
-                <CustomText style={SharedStyles.button} small bold>
-                  Done
-                </CustomText>
-              </Pressable>
+              {isSelf && (
+                <Pressable onPress={onNextTurn} style={SharedStyles.button}>
+                  <CustomText style={SharedStyles.buttonText} small bold>
+                    End Turn
+                  </CustomText>
+                </Pressable>
+              )}
             </View>
           )}
 
-          {/* Player Name */}
           <View style={styles.row}>
             <CustomText style={styles.label} small bold>
               Player Name:
@@ -162,10 +147,11 @@ function PlayerCard({
               style={styles.value}
               value={player.name}
               placeholder="Enter your name"
+              editable={isSelf}
+              onChangeText={(text) => handleUpdate('name', text)}
             />
           </View>
 
-          {/* Character Picker */}
           <View style={styles.row}>
             <CustomText style={styles.label} small bold>
               Character:
@@ -173,16 +159,15 @@ function PlayerCard({
             <View style={styles.pickerWrapper}>
               <Picker
                 selectedValue={player.character}
-                style={
-                  Platform.OS === 'android' ? styles.pickerAndroid : undefined
-                }
+                enabled={isSelf}
+                onValueChange={(value) => handleUpdate('character', value)}
+                style={ Platform.OS === 'android' ? styles.pickerAndroid : undefined }
                 itemStyle={styles.pickerItem}
               >
                 {renderPickerItems(CHARACTERS)}
               </Picker>
             </View>
           </View>
-          {/* Escape Pod Picker */}
           <View style={styles.row}>
             <CustomText style={styles.label} small bold>
               Escape Pod:
@@ -190,9 +175,9 @@ function PlayerCard({
             <View style={styles.pickerWrapper}>
               <Picker
                 selectedValue={player.escapePod}
-                style={
-                  Platform.OS === 'android' ? styles.pickerAndroid : undefined
-                }
+                enabled={isSelf}
+                onValueChange={(value) => handleUpdate('escapePod', value)}
+                style={ Platform.OS === 'android' ? styles.pickerAndroid : undefined }
                 itemStyle={styles.pickerItem}
               >
                 {renderPickerItems(ESCAPE_PODS)}
@@ -200,44 +185,22 @@ function PlayerCard({
             </View>
           </View>
 
-          {/* Current Location */}
           <View style={styles.locationContainer}>
             <CustomText style={styles.subHeader} small bold>
               Current Location
             </CustomText>
-            <Animated.View
-              style={[
-                styles.locationInputWrapper,
-                {
-                  shadowOpacity: pulseAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.3, 0.8],
-                  }),
-                  shadowRadius: pulseAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [5, 15],
-                  }),
-                  transform: [
-                    {
-                      scale: pulseAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.05],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
+            <Animated.View style={[ styles.locationInputWrapper, { shadowOpacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] }), shadowRadius: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [5, 15] }), transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05], }), },],},]}>
               <TextInput
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.locationInput, { color: lighterBg }]}
                 value={player.location}
+                editable={isSelf}
+                onChangeText={(text) => handleUpdate('location', text)}
               />
             </Animated.View>
           </View>
 
-          {/* Skill Tokens */}
           <View style={{ marginTop: 16 }}>
             <CustomText style={styles.subHeader} small bold>
               Skill Tokens
@@ -249,26 +212,16 @@ function PlayerCard({
                     <View style={styles.tokenContent}>
                       <View style={styles.tokenIcon}>
                         <View style={styles.iconWrapper}>
-                          <Image
-                            source={skillTokenIcons[index]}
-                            style={{ width: 30, height: 30 }}
-                            resizeMode="contain"
-                          />
+                          <Image source={skillTokenIcons[index]} style={{ width: 30, height: 30 }} resizeMode="contain"/>
                         </View>
                       </View>
                       <View style={styles.counterContainer}>
-                        <Pressable style={styles.tokenButton}>
-                          <CustomText style={styles.tokenButtonText}>
-                            -
-                          </CustomText>
+                        <Pressable style={styles.tokenButton} disabled={!isSelf} onPress={() => handleSkillTokenChange(index, -1)}>
+                          <CustomText style={styles.tokenButtonText}>-</CustomText>
                         </Pressable>
-                        <CustomText style={styles.tokenQuantity}>
-                          {token.quantity}
-                        </CustomText>
-                        <Pressable style={styles.tokenButton}>
-                          <CustomText style={styles.tokenButtonText}>
-                            +
-                          </CustomText>
+                        <CustomText style={styles.tokenQuantity}>{token.quantity}</CustomText>
+                        <Pressable style={styles.tokenButton} disabled={!isSelf} onPress={() => handleSkillTokenChange(index, 1)}>
+                          <CustomText style={styles.tokenButtonText}>+</CustomText>
                         </Pressable>
                       </View>
                     </View>
@@ -278,7 +231,6 @@ function PlayerCard({
             </View>
           </View>
 
-          {/* Impact Dice Grid */}
           <View style={{ marginTop: 16 }}>
             <CustomText style={styles.subHeader} small bold>
               Impact Dice Slots
@@ -286,126 +238,51 @@ function PlayerCard({
             <View style={styles.impactGrid}>
               {player.impactDiceSlots.map((slot, index) => (
                 <View key={index} style={styles.impactSlot}>
-                  <Pressable
-                    onPress={() =>
-                      handleUpdateImpactSlot(index, {
-                        ...slot,
-                        checked: !slot.checked,
-                      })
-                    }
-                  >
-                    <MaterialCommunityIcons
-                      name={
-                        slot.checked
-                          ? 'checkbox-marked'
-                          : 'checkbox-blank-outline'
-                      }
-                      size={24}
-                      color="black"
-                    />
+                  <Pressable disabled={!isSelf} onPress={() => handleUpdateImpactSlot(index, { ...slot, checked: !slot.checked, }) }>
+                    <MaterialCommunityIcons name={ slot.checked ? 'checkbox-marked' : 'checkbox-blank-outline' } size={24} color="black"/>
                   </Pressable>
                   <View style={styles.pickerWrapperImpact}>
                     <IconPicker
                       options={IMPACT_SYMBOLS}
                       selectedValue={slot.symbol}
-                      onValueChange={itemValue =>
-                        handleUpdateImpactSlot(index, {
-                          ...slot,
-                          symbol: itemValue,
-                        })
-                      }
+                      enabled={isSelf}
+                      onValueChange={itemValue => handleUpdateImpactSlot(index, { ...slot, symbol: itemValue }) }
                     />
                   </View>
-                  <Pressable onPress={() => handleRemoveImpactSlot(index)}>
-                    <MaterialCommunityIcons
-                      name="delete"
-                      size={24}
-                      color="red"
-                    />
+                  <Pressable disabled={!isSelf} onPress={() => handleRemoveImpactSlot(index)}>
+                    <MaterialCommunityIcons name="delete" size={24} color="red"/>
                   </Pressable>
                 </View>
               ))}
             </View>
-            <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
+            <Pressable style={styles.addButton} disabled={!isSelf} onPress={handleAddImpactSlot}>
               <MaterialCommunityIcons name="flash" size={24} color="white" />
               <CustomText style={styles.addButtonText}>Add Slot</CustomText>
             </Pressable>
           </View>
 
-          {/* Status Box */}
           <View style={{ marginTop: 16 }}>
             <CustomText style={styles.subHeader} small bold>
               Status Updates
             </CustomText>
             <View style={styles.statusContainer}>
-              {['heart', 'star', 'timer-sand-full'].map(status => (
+              {(['heart', 'star', 'timer-sand-full'] as const).map(status => (
                 <View key={status} style={styles.statusRow}>
-                  <MaterialCommunityIcons
-                    name={status as any}
-                    size={30}
-                    color="black"
-                  />
+                  <MaterialCommunityIcons name={status} size={30} color="black"/>
                   <View style={styles.statusTrack}>
                     {[...Array(6)].map((_, i) => (
-                      <Pressable
-                        key={i}
-                        onPress={() => {
-                          const newStatuses = {
-                            ...player.statuses,
-                            [status]: i + 1,
-                          };
-                          onUpdatePlayer({ ...player, statuses: newStatuses });
-                        }}
-                      >
-                        <View
-                          style={[
-                            styles.statusDot,
-                            i <
-                            player.statuses[
-                              status as 'heart' | 'star' | 'timer-sand-full'
-                            ]
-                              ? styles.statusDotFilled
-                              : {},
-                          ]}
-                        />
+                      <Pressable key={i} disabled={!isSelf} onPress={() => handleStatusChange(status, i + 1 - player.statuses[status])}>
+                        <View style={[ styles.statusDot, i < player.statuses[status] ? styles.statusDotFilled : {}, ]}/>
                       </Pressable>
                     ))}
                   </View>
                   <View style={styles.statusControls}>
-                    <Pressable
-                      onPress={() =>
-                        handleStatusChange(
-                          status as 'heart' | 'star' | 'timer-sand-full',
-                          -1,
-                        )
-                      }
-                    >
-                      <MaterialCommunityIcons
-                        name="minus"
-                        size={30}
-                        color="black"
-                      />
+                    <Pressable disabled={!isSelf} onPress={() => handleStatusChange(status, -1)}>
+                      <MaterialCommunityIcons name="minus" size={30} color="black"/>
                     </Pressable>
-                    <CustomText style={styles.statusLevel}>
-                      {
-                        player.statuses[
-                          status as 'heart' | 'star' | 'timer-sand-full'
-                        ]
-                      }
-                    </CustomText>
-                    <Pressable
-                      onPress={() =>
-                        handleStatusChange(
-                          status as 'heart' | 'star' | 'timer-sand-full',
-                          1,
-                        )
-                      }
-                    >
-                      <MaterialCommunityIcons
-                        name="plus"
-                        size={30}
-                        color="black"
-                      />
+                    <CustomText style={styles.statusLevel}>{player.statuses[status]}</CustomText>
+                    <Pressable disabled={!isSelf} onPress={() => handleStatusChange(status, 1)}>
+                      <MaterialCommunityIcons name="plus" size={30} color="black"/>
                     </Pressable>
                   </View>
                 </View>
@@ -413,7 +290,6 @@ function PlayerCard({
             </View>
           </View>
 
-          {/* Journal */}
           <View style={{ marginTop: 16 }}>
             <CustomText style={styles.subHeader} small bold>
               Journal
@@ -421,7 +297,8 @@ function PlayerCard({
             <TextInput
               style={styles.journalInput}
               multiline
-              onChangeText={handleJournalChange}
+              editable={isSelf}
+              onChangeText={(text) => handleUpdate('journalText', text)}
               value={player.journalText}
               placeholder="Write your notes here..."
             />
@@ -438,13 +315,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flex: 1,
   },
-  // CARD BASE
   card: {
     padding: 24,
     backgroundColor: 'white',
   },
-
-  // HEADERS
   sectionHeader: {
     textAlign: 'center',
     borderBottomWidth: 1,
@@ -455,8 +329,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     marginBottom: 6,
   },
-
-  // ROWS
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -474,8 +346,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     justifyContent: 'center',
   },
-
-  // LOCATION
   locationContainer: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -497,8 +367,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 0,
   },
-
-  // PICKER STYLES
   pickerWrapper: {
     width: 210,
     backgroundColor: '#eee',
@@ -513,8 +381,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
   },
-
-  // TURN STATUS
   buttonContainer: {
     alignItems: 'center',
     marginBottom: 16,
@@ -542,8 +408,6 @@ const styles = StyleSheet.create({
   turnText: {
     textAlign: 'center',
   },
-
-  // GRIDS & BOXES
   grid: {
     height: 80,
     backgroundColor: '#f0f0f0',
@@ -628,8 +492,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlignVertical: 'top',
   },
-
-  // SKILL TOKENS
   skillTokenGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
