@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, View, StyleSheet, TextInput } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  View,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { SharedStyles } from './SharedStyles';
-import CustomText from './CustomText'; // import CustomText
+import CustomText from './CustomText';
+import { hostGame, joinGame } from '../api';
+
+type GameData = {
+  playerId: string;
+  sessionCode: string;
+};
 
 type JoinHostModalProps = {
   isOpen: boolean;
-  toggleModal: (type: string, navigate?: boolean) => void;
+  toggleModal: (type: string, data?: GameData) => void;
   buttonPressed: string;
 };
 
@@ -15,6 +29,30 @@ const JoinHostModal = ({
   buttonPressed,
 }: JoinHostModalProps) => {
   const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async () => {
+    setLoading(true);
+    try {
+      let data;
+      if (buttonPressed === 'host') {
+        data = await hostGame();
+      } else {
+        if (text.length !== 6) {
+          Alert.alert('Error', 'Please enter a valid 6-digit session code.');
+          setLoading(false);
+          return;
+        }
+        data = await joinGame(text);
+      }
+      toggleModal(buttonPressed, data);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+      setText('');
+    }
+  };
 
   return (
     <Modal
@@ -40,22 +78,23 @@ const JoinHostModal = ({
             />
           )}
 
-          <View style={SharedStyles.buttonContainer}>
-            <Pressable style={styles.button} onPress={() => toggleModal('')}>
-              <CustomText style={styles.textStyle} small bold>
-                Close
-              </CustomText>
-            </Pressable>
+          {loading ? (
+            <ActivityIndicator size="large" color="#2196F3" />
+          ) : (
+            <View style={SharedStyles.buttonContainer}>
+              <Pressable style={styles.button} onPress={() => toggleModal('')}>
+                <CustomText style={styles.textStyle} small bold>
+                  Close
+                </CustomText>
+              </Pressable>
 
-            <Pressable
-              style={styles.button}
-              onPress={() => toggleModal('', true)}
-            >
-              <CustomText style={styles.textStyle} small bold>
-                {buttonPressed === 'join' ? 'Join' : 'Host'} Game
-              </CustomText>
-            </Pressable>
-          </View>
+              <Pressable style={styles.button} onPress={handleAction}>
+                <CustomText style={styles.textStyle} small bold>
+                  {buttonPressed === 'join' ? 'Join' : 'Host'} Game
+                </CustomText>
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
     </Modal>

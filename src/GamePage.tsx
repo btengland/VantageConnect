@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable } from 'react-native';
 import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
@@ -9,6 +9,17 @@ import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
 
 const GamePage = () => {
+  const route = useRoute();
+  const { playerId, sessionCode } = route.params as {
+    playerId: string;
+    sessionCode: string;
+  };
+
+  useEffect(() => {
+    console.log('Player ID:', playerId);
+    console.log('Session Code:', sessionCode);
+  }, [playerId, sessionCode]);
+
   // Define icons once here
   const skillTokenIcons = [
     require('./assets/Move.png'),
