@@ -1,46 +1,48 @@
-// Replace with your actual API Gateway endpoint
-const API_BASE_URL = 'https://your-api-gateway-id.execute-api.your-region.amazonaws.com/prod';
+export class WebSocketClient {
+  private ws: WebSocket | null = null;
+  private url: string;
 
-export const hostGame = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/hostSessionHandler`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}), // Empty body for hostGame as per the lambda
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.json();
-      throw new Error(errorBody.message || 'Failed to host game');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error hosting game:', error);
-    throw error;
+  constructor(url: string) {
+    this.url = url;
   }
-};
 
-export const joinGame = async (sessionCode: string) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/joinSessionHandler`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sessionCode: sessionCode }),
+  connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.ws = new WebSocket(this.url);
+
+      this.ws.onopen = () => resolve();
+      this.ws.onerror = err => reject(err);
     });
-
-    if (!response.ok) {
-      const errorBody = await response.json();
-      throw new Error(errorBody.message || 'Failed to join game');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error joining game:', error);
-    throw error;
   }
-};
+
+  hostGame(): Promise<any> {
+    return this.sendMessage({ action: 'hostSession' });
+  }
+
+  joinGame(sessionCode: string): Promise<any> {
+    return this.sendMessage({ action: 'joinSession', sessionCode });
+  }
+
+  private sendMessage(message: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        return reject(new Error('WebSocket not connected'));
+      }
+
+      // Assign a single onmessage handler
+      this.ws.onmessage = event => {
+        try {
+          const data = JSON.parse(event.data);
+          resolve(data);
+        } catch (err) {
+          reject(err);
+        } finally {
+          // Clear the handler after it fires
+          this.ws!.onmessage = null;
+        }
+      };
+
+      this.ws.send(JSON.stringify(message));
+    });
+  }
+}

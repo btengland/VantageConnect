@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
-import { hostGame, joinGame } from '../api';
+import { WebSocketClient } from '../api';
 
 type GameData = {
   playerId: string;
@@ -31,20 +31,28 @@ const JoinHostModal = ({
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Create WebSocket client
+  const wsClient = new WebSocketClient(
+    'wss://4gjwhoq0uf.execute-api.us-east-2.amazonaws.com/production/',
+  );
+
   const handleAction = async () => {
     setLoading(true);
     try {
+      await wsClient.connect();
       let data;
+
       if (buttonPressed === 'host') {
-        data = await hostGame();
+        data = await wsClient.hostGame();
       } else {
         if (text.length !== 6) {
           Alert.alert('Error', 'Please enter a valid 6-digit session code.');
           setLoading(false);
           return;
         }
-        data = await joinGame(text);
+        data = await wsClient.joinGame(text);
       }
+
       toggleModal(buttonPressed, data);
     } catch (error: any) {
       Alert.alert('Error', error.message);
@@ -102,11 +110,7 @@ const JoinHostModal = ({
 };
 
 const styles = StyleSheet.create({
-  modalText: {
-    fontSize: 24,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
+  modalText: { fontSize: 24, marginBottom: 16, textAlign: 'center' },
   textInput: {
     width: '100%',
     paddingVertical: 14,
@@ -126,10 +130,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     elevation: 2,
   },
-  textStyle: {
-    color: 'white',
-    textAlign: 'center',
-  },
+  textStyle: { color: 'white', textAlign: 'center' },
 });
 
 export default JoinHostModal;
