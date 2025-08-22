@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, View, StyleSheet, TextInput } from 'react-native';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText'; // import CustomText
+import { useWebSocket } from './useWebSocket';
 
 type JoinHostModalProps = {
   isOpen: boolean;
@@ -15,6 +16,22 @@ const JoinHostModal = ({
   buttonPressed,
 }: JoinHostModalProps) => {
   const [text, setText] = useState('');
+
+  const { connected, sendMessage } = useWebSocket({
+    url: 'wss://gh1j093d4d.execute-api.us-east-2.amazonaws.com/production/',
+    onMessage: (data: any) => {
+      console.log('Received WS message:', data);
+    },
+  });
+
+  const handleJoinHost = () => {
+    if (buttonPressed === 'join') {
+      sendMessage({ action: 'joinSession', sessionCode: text });
+    } else {
+      sendMessage({ action: 'hostSession' });
+    }
+    toggleModal('', true);
+  };
 
   return (
     <Modal
