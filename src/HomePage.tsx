@@ -14,7 +14,6 @@ import CustomText from './components/CustomText';
 
 type GameData = {
   playerId: number;
-  gameCode: number;
   sessionCode: number;
 };
 
@@ -33,7 +32,6 @@ const HomePage = () => {
     if (data) {
       (navigation as any).navigate('Game', {
         playerId: data.playerId,
-        gameCode: data.gameCode,
         sessionCode: data.sessionCode,
       });
       setOpen(false);
