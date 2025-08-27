@@ -33,9 +33,17 @@ export class GameWebSocket {
   }
 
   once(action: string): Promise<any> {
-    return new Promise(resolve => {
-      const handler = (data: any) => {
+    return new Promise((resolve, reject) => {
+      let handler: (data: any) => void;
+
+      const timeout = setTimeout(() => {
+        this.off(handler); // Clean up the handler
+        reject(new Error(`Timeout: No response for action '${action}'`));
+      }, 10000); // 10-second timeout
+
+      handler = (data: any) => {
         if (data.action === action) {
+          clearTimeout(timeout);
           this.off(handler);
           resolve(data);
         }
