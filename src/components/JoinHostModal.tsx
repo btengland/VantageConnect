@@ -64,10 +64,7 @@ const JoinHostModal = ({
               </CustomText>
             </Pressable>
 
-            <Pressable
-              style={styles.button}
-              onPress={() => toggleModal('', true)}
-            >
+            <Pressable style={styles.button} onPress={handleJoinHost}>
               <CustomText style={styles.textStyle} small bold>
                 {buttonPressed === 'join' ? 'Join' : 'Host'} Game
               </CustomText>
