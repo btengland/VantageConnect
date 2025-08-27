@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Pressable,
@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
-import { hostGame, joinGame } from '../api';
+import { hostGame, joinGame, wsClient, connectWebSocket } from '../api';
 
 type GameData = {
-  playerId: string;
+  playerId: number;
+  gameCode: number;
   sessionCode: string;
 };
 
@@ -31,22 +32,34 @@ const JoinHostModal = ({
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Connect WebSocket once when modal mounts
+  useEffect(() => {
+    connectWebSocket().catch(err =>
+      console.error('WebSocket connect failed', err),
+    );
+
+    // Optional: close on unmount
+    return () => {
+      wsClient.close();
+    };
+  }, []);
+
   const handleAction = async () => {
     setLoading(true);
     try {
       let data;
       if (buttonPressed === 'host') {
         data = await hostGame();
+        console.log('Hosted game:', data);
       } else {
-        if (text.length !== 6) {
-          Alert.alert('Error', 'Please enter a valid 6-digit session code.');
-          setLoading(false);
-          return;
-        }
-        data = await joinGame(text);
+        const sessionNumber = Number(text);
+        data = await joinGame(sessionNumber);
+        console.log('Joined game:', data);
       }
       toggleModal(buttonPressed, data);
+      console.log('Modal toggled, loading should stop');
     } catch (error: any) {
+      console.error('Error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
@@ -72,7 +85,7 @@ const JoinHostModal = ({
               style={styles.textInput}
               onChangeText={setText}
               value={text}
-              placeholder={'Enter six digit code'}
+              placeholder="Enter six digit code"
               keyboardType="number-pad"
               maxLength={6}
             />

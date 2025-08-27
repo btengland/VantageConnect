@@ -1,46 +1,23 @@
-// Replace with your actual API Gateway endpoint
-const API_BASE_URL = 'https://your-api-gateway-id.execute-api.your-region.amazonaws.com/prod';
+import { GameWebSocket } from './websocketApi';
 
-export const hostGame = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/hostSessionHandler`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}), // Empty body for hostGame as per the lambda
-    });
+const WS_URL =
+  'wss://4gjwhoq0uf.execute-api.us-east-2.amazonaws.com/production';
 
-    if (!response.ok) {
-      const errorBody = await response.json();
-      throw new Error(errorBody.message || 'Failed to host game');
-    }
+export const wsClient = new GameWebSocket(WS_URL);
 
-    return await response.json();
-  } catch (error) {
-    console.error('Error hosting game:', error);
-    throw error;
-  }
+export const connectWebSocket = async () => {
+  await wsClient.connect();
 };
 
-export const joinGame = async (sessionCode: string) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/joinSessionHandler`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sessionCode: sessionCode }),
-    });
+export const hostGame = async (): Promise<{
+  playerId: string;
+  sessionCode: number;
+}> => {
+  wsClient.sendMessage({ action: 'hostSession' });
+  return await wsClient.once('hostSession');
+};
 
-    if (!response.ok) {
-      const errorBody = await response.json();
-      throw new Error(errorBody.message || 'Failed to join game');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error joining game:', error);
-    throw error;
-  }
+export const joinGame = async (sessionCode: number) => {
+  wsClient.sendMessage({ action: 'joinSession', sessionCode });
+  return await wsClient.once('joinSession');
 };

@@ -13,7 +13,8 @@ import { StatusBar, useColorScheme } from 'react-native';
 import CustomText from './components/CustomText';
 
 type GameData = {
-  playerId: string;
+  playerId: number;
+  gameCode: number;
   sessionCode: string;
 };
 
@@ -32,6 +33,7 @@ const HomePage = () => {
     if (data) {
       (navigation as any).navigate('Game', {
         playerId: data.playerId,
+        gameCode: data.gameCode,
         sessionCode: data.sessionCode,
       });
       setOpen(false);

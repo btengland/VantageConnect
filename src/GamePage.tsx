@@ -11,7 +11,7 @@ import { getCharacterColor } from './utils';
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
-    playerId: string;
+    playerId: number;
     sessionCode: string;
   };
 
