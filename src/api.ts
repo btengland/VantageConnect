@@ -10,7 +10,7 @@ export const connectWebSocket = async () => {
 };
 
 export const hostGame = async (): Promise<{
-  playerId: string;
+  playerId: number;
   sessionCode: number;
 }> => {
   wsClient.sendMessage({ action: 'hostSession' });

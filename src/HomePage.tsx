@@ -15,7 +15,7 @@ import CustomText from './components/CustomText';
 type GameData = {
   playerId: number;
   gameCode: number;
-  sessionCode: string;
+  sessionCode: number;
 };
 
 const HomePage = () => {

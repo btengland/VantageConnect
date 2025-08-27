@@ -15,7 +15,7 @@ import { hostGame, joinGame, wsClient, connectWebSocket } from '../api';
 type GameData = {
   playerId: number;
   gameCode: number;
-  sessionCode: string;
+  sessionCode: number;
 };
 
 type JoinHostModalProps = {
