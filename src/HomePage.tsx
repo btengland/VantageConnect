@@ -12,6 +12,12 @@ import JoinHostModal from './components/JoinHostModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import CustomText from './components/CustomText';
 
+type GameData = {
+  playerId: number;
+  gameCode: number;
+  sessionCode: string;
+};
+
 const HomePage = () => {
   const [isOpen, setOpen] = useState(false);
   const [buttonPressed, setButtonPressed] = useState('');
@@ -20,12 +26,16 @@ const HomePage = () => {
 
   const isDarkMode = useColorScheme() === 'light';
 
-  const toggleModal = (type: string, navigate?: boolean) => {
+  const toggleModal = (type: string, data?: GameData) => {
     setButtonPressed(type);
     setOpen(type !== '');
 
-    if (navigate) {
-      (navigation as any).navigate('Game');
+    if (data) {
+      (navigation as any).navigate('Game', {
+        playerId: data.playerId,
+        gameCode: data.gameCode,
+        sessionCode: data.sessionCode,
+      });
       setOpen(false);
     }
   };

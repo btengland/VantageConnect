@@ -1,12 +1,26 @@
-import React, { useState } from 'react';
-import { Modal, Pressable, View, StyleSheet, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  Modal,
+  Pressable,
+  View,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { SharedStyles } from './SharedStyles';
-import CustomText from './CustomText'; // import CustomText
-import { useWebSocket } from './useWebSocket';
+import CustomText from './CustomText';
+import { hostGame, joinGame, wsClient, connectWebSocket } from '../api';
+
+type GameData = {
+  playerId: number;
+  gameCode: number;
+  sessionCode: string;
+};
 
 type JoinHostModalProps = {
   isOpen: boolean;
-  toggleModal: (type: string, navigate?: boolean) => void;
+  toggleModal: (type: string, data?: GameData) => void;
   buttonPressed: string;
 };
 
@@ -16,6 +30,42 @@ const JoinHostModal = ({
   buttonPressed,
 }: JoinHostModalProps) => {
   const [text, setText] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Connect WebSocket once when modal mounts
+  useEffect(() => {
+    connectWebSocket().catch(err =>
+      console.error('WebSocket connect failed', err),
+    );
+
+    // Optional: close on unmount
+    return () => {
+      wsClient.close();
+    };
+  }, []);
+
+  const handleAction = async () => {
+    setLoading(true);
+    try {
+      let data;
+      if (buttonPressed === 'host') {
+        data = await hostGame();
+        console.log('Hosted game:', data);
+      } else {
+        const sessionNumber = Number(text);
+        data = await joinGame(sessionNumber);
+        console.log('Joined game:', data);
+      }
+      toggleModal(buttonPressed, data);
+      console.log('Modal toggled, loading should stop');
+    } catch (error: any) {
+      console.error('Error:', error);
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+      setText('');
+    }
+  };
 
   const { connected, sendMessage } = useWebSocket({
     url: 'wss://gh1j093d4d.execute-api.us-east-2.amazonaws.com/production/',
@@ -51,28 +101,29 @@ const JoinHostModal = ({
               style={styles.textInput}
               onChangeText={setText}
               value={text}
-              placeholder={'Enter six digit code'}
+              placeholder="Enter six digit code"
               keyboardType="number-pad"
               maxLength={6}
             />
           )}
 
-          <View style={SharedStyles.buttonContainer}>
-            <Pressable style={styles.button} onPress={() => toggleModal('')}>
-              <CustomText style={styles.textStyle} small bold>
-                Close
-              </CustomText>
-            </Pressable>
+          {loading ? (
+            <ActivityIndicator size="large" color="#2196F3" />
+          ) : (
+            <View style={SharedStyles.buttonContainer}>
+              <Pressable style={styles.button} onPress={() => toggleModal('')}>
+                <CustomText style={styles.textStyle} small bold>
+                  Close
+                </CustomText>
+              </Pressable>
 
-            <Pressable
-              style={styles.button}
-              onPress={() => toggleModal('', true)}
-            >
-              <CustomText style={styles.textStyle} small bold>
-                {buttonPressed === 'join' ? 'Join' : 'Host'} Game
-              </CustomText>
-            </Pressable>
-          </View>
+              <Pressable style={styles.button} onPress={handleAction}>
+                <CustomText style={styles.textStyle} small bold>
+                  {buttonPressed === 'join' ? 'Join' : 'Host'} Game
+                </CustomText>
+              </Pressable>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
