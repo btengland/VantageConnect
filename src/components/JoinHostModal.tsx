@@ -38,9 +38,11 @@ const JoinHostModal = ({
       console.error('WebSocket connect failed', err),
     );
 
-    // Optional: close on unmount
+    // Cleanup on unmount
     return () => {
-      wsClient.close();
+      if (wsClient) {
+        wsClient.close();
+      }
     };
   }, []);
 
@@ -57,30 +59,13 @@ const JoinHostModal = ({
         console.log('Joined game:', data);
       }
       toggleModal(buttonPressed, data);
-      console.log('Modal toggled, loading should stop');
     } catch (error: any) {
       console.error('Error:', error);
-      Alert.alert('Error', error.message);
+      Alert.alert('Error', error.message || 'Something went wrong');
     } finally {
       setLoading(false);
       setText('');
     }
-  };
-
-  const { connected, sendMessage } = useWebSocket({
-    url: 'wss://gh1j093d4d.execute-api.us-east-2.amazonaws.com/production/',
-    onMessage: (data: any) => {
-      console.log('Received WS message:', data);
-    },
-  });
-
-  const handleJoinHost = () => {
-    if (buttonPressed === 'join') {
-      sendMessage({ action: 'joinSession', sessionCode: text });
-    } else {
-      sendMessage({ action: 'hostSession' });
-    }
-    toggleModal('', true);
   };
 
   return (
