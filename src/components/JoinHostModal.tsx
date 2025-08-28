@@ -14,7 +14,6 @@ import { hostGame, joinGame, wsClient, connectWebSocket } from '../api';
 
 type GameData = {
   playerId: number;
-  gameCode: number;
   sessionCode: number;
 };
 
@@ -52,13 +51,25 @@ const JoinHostModal = ({
       let data;
       if (buttonPressed === 'host') {
         data = await hostGame();
-        console.log('Hosted game:', data);
+
+        const gameData: GameData = {
+          playerId: data.playerId,
+          sessionCode: data.sessionCode,
+        };
+
+        toggleModal(buttonPressed, gameData);
       } else {
         const sessionNumber = Number(text);
         data = await joinGame(sessionNumber);
         console.log('Joined game:', data);
+
+        const gameData: GameData = {
+          playerId: data.playerId,
+          sessionCode: data.sessionCode,
+        };
+
+        toggleModal(buttonPressed, gameData);
       }
-      toggleModal(buttonPressed, data);
     } catch (error: any) {
       console.error('Error:', error);
       Alert.alert('Error', error.message || 'Something went wrong');

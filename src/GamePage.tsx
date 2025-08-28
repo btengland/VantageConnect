@@ -17,7 +17,6 @@ const GamePage = () => {
 
   useEffect(() => {
     console.log('Player ID:', playerId);
-    console.log('Session Code:', sessionCode);
   }, [playerId, sessionCode]);
 
   // Define icons once here
@@ -49,6 +48,7 @@ const GamePage = () => {
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState('');
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
+  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -79,6 +79,12 @@ const GamePage = () => {
         >
           <CustomText style={styles.closeButtonText}>X</CustomText>
         </Pressable>
+
+        <View style={styles.sessionCode}>
+          <CustomText style={styles.mainText} small>
+            Session Code: {sessionCode}
+          </CustomText>
+        </View>
 
         {/* Header */}
         <View style={styles.diceContainer}>
@@ -137,13 +143,14 @@ const GamePage = () => {
             ))}
           </View>
 
-          {/* Player Card */}
-          <PlayerCard
-            player={playerInfo.find(p => p.id === viewedPlayer)!}
-            getCharacterColor={getCharacterColor}
-            skillTokenIcons={skillTokenIcons}
-            onUpdatePlayer={handleUpdatePlayer}
-          />
+          {currentPlayer && (
+            <PlayerCard
+              player={currentPlayer}
+              getCharacterColor={getCharacterColor}
+              skillTokenIcons={skillTokenIcons}
+              onUpdatePlayer={handleUpdatePlayer}
+            />
+          )}
         </View>
       </View>
 
@@ -254,6 +261,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 20,
     lineHeight: 20,
+  },
+  sessionCode: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
 });
 

@@ -1,5 +1,7 @@
+// wsClient.ts
 import { GameWebSocket } from './websocketApi';
 
+// Use your WebSocket URL here
 const WS_URL =
   'wss://4gjwhoq0uf.execute-api.us-east-2.amazonaws.com/production';
 
@@ -17,7 +19,9 @@ export const hostGame = async (): Promise<{
   return await wsClient.once('hostSession');
 };
 
-export const joinGame = async (sessionCode: number) => {
+export const joinGame = async (
+  sessionCode: number,
+): Promise<{ playerId: number; sessionCode: number }> => {
   wsClient.sendMessage({ action: 'joinSession', sessionCode });
   return await wsClient.once('joinSession');
 };
