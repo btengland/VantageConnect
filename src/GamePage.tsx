@@ -7,17 +7,14 @@ import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
+import { wsClient, connectWebSocket, readPlayers } from './api';
 
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
     playerId: number;
-    sessionCode: string;
+    sessionCode: number;
   };
-
-  useEffect(() => {
-    console.log('Player ID:', playerId);
-  }, [playerId, sessionCode]);
 
   // Define icons once here
   const skillTokenIcons = [
@@ -66,6 +63,40 @@ const GamePage = () => {
       playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initWebSocket = async () => {
+      try {
+        await connectWebSocket();
+        console.log('WebSocket connected');
+
+        // Subscribe to player updates
+        readPlayers(sessionCode, players => {
+          if (!isMounted) return;
+          setPlayerInfo(players);
+
+          console.log(players, 'players');
+
+          // Optional: set currentPlayer to yourself
+          const me = players.find(p => p.id === playerId.toString());
+          if (me) setCurrentPlayer(me);
+        });
+      } catch (err) {
+        console.error('WebSocket connection failed:', err);
+      }
+    };
+
+    initWebSocket();
+
+    return () => {
+      isMounted = false;
+      wsClient.close();
+    };
+  }, [playerId, sessionCode]);
+
+  console.log(playerInfo, 'heerdfere');
 
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>

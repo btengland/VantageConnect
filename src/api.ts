@@ -25,3 +25,16 @@ export const joinGame = async (
   wsClient.sendMessage({ action: 'joinSession', sessionCode });
   return await wsClient.once('joinSession');
 };
+
+export const readPlayers = (
+  sessionCode: number,
+  callback: (players: any[]) => void,
+) => {
+  wsClient.sendMessage({ action: 'readPlayers', sessionCode });
+
+  wsClient.onMessage((data: any) => {
+    if (data.action === 'readPlayers') {
+      callback(data.players);
+    }
+  });
+};

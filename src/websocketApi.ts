@@ -77,6 +77,11 @@ export class GameWebSocket {
     });
   }
 
+  // ✅ Add this method to allow subscribing to messages
+  onMessage(handler: (data: any) => void) {
+    this.messageHandlers.push(handler);
+  }
+
   off(handler: (data: any) => void) {
     this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
   }
