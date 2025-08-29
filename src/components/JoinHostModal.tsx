@@ -52,6 +52,8 @@ const JoinHostModal = ({
       if (buttonPressed === 'host') {
         data = await hostGame();
 
+        if ((data as any).action === 'error') return;
+
         const gameData: GameData = {
           playerId: data.playerId,
           sessionCode: data.sessionCode,
@@ -61,7 +63,8 @@ const JoinHostModal = ({
       } else {
         const sessionNumber = Number(text);
         data = await joinGame(sessionNumber);
-        console.log('Joined game:', data);
+
+        if ((data as any).action === 'error') return;
 
         const gameData: GameData = {
           playerId: data.playerId,

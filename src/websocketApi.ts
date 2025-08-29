@@ -1,3 +1,5 @@
+import { Alert } from 'react-native';
+
 // websocketApi.ts
 export class GameWebSocket {
   private ws: WebSocket | null = null;
@@ -51,13 +53,22 @@ export class GameWebSocket {
       const timeout = setTimeout(() => {
         this.off(handler);
         reject(new Error(`Timeout: No response for action '${action}'`));
-      }, 10000); // 10 seconds
+      }, 10000);
 
       handler = (data: any) => {
-        if (data.action === action || data.playerId) {
-          // fallback if your Lambda just sends {playerId, sessionCode}
+        // Resolve on success OR error
+        if (
+          data.action === action ||
+          data.action === 'error' ||
+          data.playerId
+        ) {
           clearTimeout(timeout);
           this.off(handler);
+
+          if (data.action === 'error' && data.code) {
+            Alert.alert('Error', data.message || 'An error occurred');
+          }
+
           resolve(data);
         }
       };
