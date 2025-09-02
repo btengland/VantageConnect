@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from './components/PlayerCard';
@@ -47,6 +47,7 @@ const GamePage = () => {
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -111,9 +112,11 @@ const GamePage = () => {
 
           const me = rotatedPlayers[0];
           if (me) setViewedPlayer(me);
+          setLoading(false);
         });
       } catch (err) {
         console.error('WebSocket connection failed:', err);
+        setLoading(false);
       }
     };
 
@@ -126,6 +129,15 @@ const GamePage = () => {
   }, [playerId, sessionCode]);
 
   console.log(playerInfo);
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#025472" />
+        <CustomText>Loading game...</CustomText>
+      </View>
+    );
+  }
 
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
@@ -326,6 +338,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#b7c9d0',
   },
 });
 
