@@ -30,6 +30,8 @@ const GamePage = () => {
   type Statuses = { heart: number; star: number; 'timer-sand-full': number };
   type Player = {
     id: string;
+    sessionCode: string;
+    playerNumber: number;
     name: string;
     character: string;
     escapePod: string;
@@ -43,9 +45,8 @@ const GamePage = () => {
 
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
-  const [viewedPlayer, setViewedPlayer] = useState('');
+  const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -64,6 +65,13 @@ const GamePage = () => {
     );
   };
 
+  const rotatePlayers = (players: Player[], currentPlayerId: number) => {
+    const index = players.findIndex(p => p.id === currentPlayerId.toString());
+    if (index === -1) return players; // fallback if not found
+
+    return [...players.slice(index), ...players.slice(0, index)];
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -73,15 +81,36 @@ const GamePage = () => {
         console.log('WebSocket connected');
 
         // Subscribe to player updates
-        readPlayers(sessionCode, players => {
+        readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
-          setPlayerInfo(players);
 
-          console.log(players, 'players');
+          const players: Player[] = playersFromBackend.map((p, index) => ({
+            id: p.playerId.toString() || '',
+            sessionCode: p.sessionCode?.toString() || '',
+            playerNumber: index,
+            name: '',
+            character: '',
+            escapePod: '',
+            location: '',
+            skillTokens: [
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+            ],
+            turn: p.turn,
+            journalText: '',
+            statuses: { heart: 0, star: 0, 'timer-sand-full': 0 },
+            impactDiceSlots: [],
+          }));
 
-          // Optional: set currentPlayer to yourself
-          const me = players.find(p => p.id === playerId.toString());
-          if (me) setCurrentPlayer(me);
+          const rotatedPlayers = rotatePlayers(players, playerId);
+          setPlayerInfo(rotatedPlayers);
+
+          const me = rotatedPlayers[0];
+          if (me) setViewedPlayer(me);
         });
       } catch (err) {
         console.error('WebSocket connection failed:', err);
@@ -96,7 +125,7 @@ const GamePage = () => {
     };
   }, [playerId, sessionCode]);
 
-  console.log(playerInfo, 'heerdfere');
+  console.log(playerInfo);
 
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
@@ -147,7 +176,7 @@ const GamePage = () => {
             {playerInfo.map(player => (
               <View key={player.id} style={styles.innerSidebar}>
                 <Pressable
-                  onPress={() => setViewedPlayer(player.id)}
+                  onPress={() => setViewedPlayer(player)}
                   style={[
                     styles.bubble,
                     { backgroundColor: getCharacterColor(player.character) },
@@ -162,7 +191,7 @@ const GamePage = () => {
                   </CustomText>
                 </Pressable>
 
-                {player.id === viewedPlayer && (
+                {player.id === viewedPlayer?.id && (
                   <View
                     style={[
                       styles.triangle,
@@ -174,9 +203,9 @@ const GamePage = () => {
             ))}
           </View>
 
-          {currentPlayer && (
+          {viewedPlayer && (
             <PlayerCard
-              player={currentPlayer}
+              player={viewedPlayer}
               getCharacterColor={getCharacterColor}
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}

@@ -33,7 +33,7 @@ export const readPlayers = (
   wsClient.sendMessage({ action: 'readPlayers', sessionCode });
 
   wsClient.onMessage((data: any) => {
-    if (data.action === 'readPlayers') {
+    if (data.action === 'updatePlayers') {
       callback(data.players);
     }
   });

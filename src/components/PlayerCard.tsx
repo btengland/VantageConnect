@@ -31,6 +31,7 @@ type ImpactDiceSlot = {
 type Player = {
   id: string;
   name: string;
+  playerNumber: number;
   character: string;
   escapePod: string;
   location: string;
@@ -129,7 +130,7 @@ function PlayerCard({
         >
           {/* Header */}
           <CustomText style={styles.sectionHeader} small bold>
-            {getOrdinal(Number(player.id) + 1)} Player
+            {getOrdinal(Number(player?.playerNumber) + 1)} Player
           </CustomText>
 
           {/* Current Turn Section */}
