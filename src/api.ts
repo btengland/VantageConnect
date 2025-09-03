@@ -38,3 +38,11 @@ export const readPlayers = (
     }
   });
 };
+
+export const endTurn = async (
+  sessionCode: number,
+  currentPlayerId: number,
+): Promise<void> => {
+  // send to API Gateway WebSocket
+  wsClient.sendMessage({ action: 'endTurn', sessionCode, currentPlayerId });
+};

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,6 +18,7 @@ import IconPicker from './IconPicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
 import { getOrdinal, lightenColor } from '../utils';
+import { endTurn } from '../api';
 
 type SkillToken = {
   quantity: number;
@@ -29,7 +30,8 @@ type ImpactDiceSlot = {
 };
 
 type Player = {
-  id: string;
+  id: number;
+  sessionCode: number;
   name: string;
   playerNumber: number;
   character: string;
@@ -47,6 +49,7 @@ type Player = {
 };
 
 type PlayerCardProps = {
+  currentPlayerId: number;
   player: Player;
   getCharacterColor: (characterText: string) => string;
   skillTokenIcons: any[];
@@ -54,11 +57,14 @@ type PlayerCardProps = {
 };
 
 function PlayerCard({
+  currentPlayerId,
   player,
   getCharacterColor,
   skillTokenIcons,
   onUpdatePlayer,
 }: PlayerCardProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   const handleAddImpactSlot = () => {
@@ -115,6 +121,20 @@ function PlayerCard({
     ).start();
   }, [pulseAnim]);
 
+  const handleEndTurn = async () => {
+    try {
+      setIsLoading(true);
+      await endTurn(player.sessionCode, player.id);
+      // optionally update local state if needed:
+      onUpdatePlayer({ ...player, turn: false });
+    } catch (err) {
+      setIsLoading(false);
+      console.error('End turn failed', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
@@ -134,7 +154,7 @@ function PlayerCard({
           </CustomText>
 
           {/* Current Turn Section */}
-          {player.turn && (
+          {player.turn && player.id === currentPlayerId && (
             <View style={styles.buttonContainer}>
               <View
                 style={[
@@ -146,7 +166,7 @@ function PlayerCard({
                   It's your turn
                 </CustomText>
               </View>
-              <Pressable>
+              <Pressable disabled={isLoading} onPress={handleEndTurn}>
                 <CustomText style={SharedStyles.button} small bold>
                   Done
                 </CustomText>

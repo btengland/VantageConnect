@@ -29,8 +29,8 @@ const GamePage = () => {
   type SkillToken = { quantity: number };
   type Statuses = { heart: number; star: number; 'timer-sand-full': number };
   type Player = {
-    id: string;
-    sessionCode: string;
+    id: number;
+    sessionCode: number;
     playerNumber: number;
     name: string;
     character: string;
@@ -67,7 +67,7 @@ const GamePage = () => {
   };
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
-    const index = players.findIndex(p => p.id === currentPlayerId.toString());
+    const index = players.findIndex(p => p.id === currentPlayerId);
     if (index === -1) return players; // fallback if not found
 
     return [...players.slice(index), ...players.slice(0, index)];
@@ -86,8 +86,8 @@ const GamePage = () => {
           if (!isMounted) return;
 
           const players: Player[] = playersFromBackend.map((p, index) => ({
-            id: p.playerId.toString() || '',
-            sessionCode: p.sessionCode?.toString() || '',
+            id: p.playerId || '',
+            sessionCode: p.sessionCode || '',
             playerNumber: index,
             name: '',
             character: '',
@@ -217,6 +217,7 @@ const GamePage = () => {
 
           {viewedPlayer && (
             <PlayerCard
+              currentPlayerId={playerId}
               player={viewedPlayer}
               getCharacterColor={getCharacterColor}
               skillTokenIcons={skillTokenIcons}
