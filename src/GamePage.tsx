@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from './components/ExitModal';
@@ -7,7 +7,13 @@ import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
-import { wsClient, connectWebSocket, readPlayers } from './api';
+import {
+  wsClient,
+  connectWebSocket,
+  readPlayers,
+  updateChallengeDice,
+  onChallengeDiceUpdate,
+} from './api';
 
 const GamePage = () => {
   const route = useRoute();
@@ -128,7 +134,25 @@ const GamePage = () => {
     };
   }, [playerId, sessionCode]);
 
-  console.log(playerInfo);
+  // console.log(playerInfo);
+
+  const handleDiceChange = (delta: number) => {
+    // 1️⃣ Update local state immediately (optimistic)
+    setChallengeDice(prev => {
+      const newVal = Math.max(0, prev + delta);
+
+      // 2️⃣ Send update to backend
+      updateChallengeDice(sessionCode, newVal);
+
+      return newVal;
+    });
+  };
+
+  useEffect(() => {
+    onChallengeDiceUpdate(newDice => {
+      setChallengeDice(newDice);
+    });
+  }, []);
 
   if (loading) {
     return (
@@ -165,7 +189,7 @@ const GamePage = () => {
           </CustomText>
           <View style={styles.diceControl}>
             <Pressable
-              onPress={() => setChallengeDice(prev => Math.max(0, prev - 1))}
+              onPress={() => handleDiceChange(-1)}
               style={styles.diceButton}
             >
               <CustomText style={styles.diceButtonText}>-</CustomText>
@@ -174,7 +198,7 @@ const GamePage = () => {
             <CustomText style={styles.diceValue}>{challengeDice}</CustomText>
 
             <Pressable
-              onPress={() => setChallengeDice(prev => prev + 1)}
+              onPress={() => handleDiceChange(1)}
               style={styles.diceButton}
             >
               <CustomText style={styles.diceButtonText}>+</CustomText>

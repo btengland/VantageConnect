@@ -46,3 +46,19 @@ export const endTurn = async (
   // send to API Gateway WebSocket
   wsClient.sendMessage({ action: 'endTurn', sessionCode, currentPlayerId });
 };
+
+export const updateChallengeDice = (sessionCode: number, value: number) => {
+  wsClient.sendMessage({
+    action: 'updateChallengeDice',
+    gameId: sessionCode,
+    challengeDice: value,
+  });
+};
+
+export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
+  wsClient.onMessage((data: any) => {
+    if (data.action === 'updateChallengeDice') {
+      callback(data.challengeDice);
+    }
+  });
+};
