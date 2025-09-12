@@ -94,7 +94,7 @@ const GamePage = () => {
           const players: Player[] = playersFromBackend.map((p, index) => ({
             id: p.playerId || '',
             sessionCode: p.sessionCode || '',
-            playerNumber: index,
+            playerNumber: playersFromBackend.length - 1 - index,
             name: '',
             character: '',
             escapePod: '',
@@ -116,8 +116,10 @@ const GamePage = () => {
           const rotatedPlayers = rotatePlayers(players, playerId);
           setPlayerInfo(rotatedPlayers);
 
-          const me = rotatedPlayers[0];
-          if (me) setViewedPlayer(me);
+          setViewedPlayer(prev => {
+            const exists = rotatedPlayers.find(p => p.id === prev?.id);
+            return exists || rotatedPlayers[0];
+          });
           setLoading(false);
         });
       } catch (err) {
