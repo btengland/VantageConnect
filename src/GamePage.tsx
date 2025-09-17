@@ -12,7 +12,7 @@ import {
   connectWebSocket,
   readPlayers,
   updateChallengeDice,
-  onChallengeDiceUpdate,
+  onGameUpdate,
 } from './api';
 
 const GamePage = () => {
@@ -83,78 +83,59 @@ const GamePage = () => {
     let isMounted = true;
 
     const initWebSocket = async () => {
-      try {
-        await connectWebSocket();
-        console.log('WebSocket connected');
-
-        // Subscribe to player updates
-        readPlayers(sessionCode, playersFromBackend => {
-          if (!isMounted) return;
-
-          const players: Player[] = playersFromBackend.map((p, index) => ({
-            id: p.playerId || '',
-            sessionCode: p.sessionCode || '',
-            playerNumber: playersFromBackend.length - 1 - index,
-            name: '',
-            character: '',
-            escapePod: '',
-            location: '',
-            skillTokens: [
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-            ],
-            turn: p.turn,
-            journalText: '',
-            statuses: { heart: 0, star: 0, 'timer-sand-full': 0 },
-            impactDiceSlots: [],
-          }));
-
-          const rotatedPlayers = rotatePlayers(players, playerId);
-          setPlayerInfo(rotatedPlayers);
-
-          setViewedPlayer(prev => {
-            const exists = rotatedPlayers.find(p => p.id === prev?.id);
-            return exists || rotatedPlayers[0];
-          });
+      if (!wsClient.isConnected()) {
+        try {
+          await connectWebSocket();
+          console.log('WebSocket connected');
+        } catch (err) {
+          console.error('WebSocket connection failed:', err);
           setLoading(false);
-        });
-      } catch (err) {
-        console.error('WebSocket connection failed:', err);
-        setLoading(false);
+          return;
+        }
       }
+
+      onGameUpdate(game => {
+        if (!isMounted) return;
+
+        // Assuming game object has { players: Player[], challengeDice: number }
+        const players = game.players || [];
+        const rotatedPlayers = rotatePlayers(players, playerId);
+
+        setPlayerInfo(rotatedPlayers);
+        setChallengeDice(game.challengeDice || 0);
+
+        setViewedPlayer(prev => {
+          const currentlyViewedExists = rotatedPlayers.find(
+            p => p.id === prev?.id,
+          );
+          return currentlyViewedExists || rotatedPlayers[0] || null;
+        });
+
+        if (loading) {
+          setLoading(false);
+        }
+      });
+
+      // Request initial game state
+      readPlayers(sessionCode);
     };
 
     initWebSocket();
 
     return () => {
       isMounted = false;
-      wsClient.close();
+      // Optional: decide if you want to close the connection on component unmount
+      // wsClient.close();
     };
-  }, [playerId, sessionCode]);
-
-  // console.log(playerInfo);
+  }, [playerId, sessionCode, loading]);
 
   const handleDiceChange = (delta: number) => {
-    // 1️⃣ Update local state immediately (optimistic)
     setChallengeDice(prev => {
       const newVal = Math.max(0, prev + delta);
-
-      // 2️⃣ Send update to backend
       updateChallengeDice(sessionCode, newVal);
-
       return newVal;
     });
   };
-
-  useEffect(() => {
-    onChallengeDiceUpdate(newDice => {
-      setChallengeDice(newDice);
-    });
-  }, []);
 
   if (loading) {
     return (
