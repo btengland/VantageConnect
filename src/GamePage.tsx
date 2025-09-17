@@ -7,6 +7,7 @@ import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
+import { wsClient, updateChallengeDice } from './api';
 
 const GamePage = () => {
   const route = useRoute();
@@ -67,6 +68,46 @@ const GamePage = () => {
     );
   };
 
+  useEffect(() => {
+    const handler = (data: any) => {
+      if (data.action === 'updatePlayers') {
+        setPlayerInfo(data.players);
+        // Also update challenge dice if included in the payload
+        if (typeof data.challengeDice === 'number') {
+          setChallengeDice(data.challengeDice);
+        }
+      } else if (data.action === 'updateChallengeDice') {
+        setChallengeDice(data.challengeDice);
+      }
+    };
+
+    wsClient.messageHandlers.push(handler);
+
+    // On mount, set the initially viewed player to the current player
+    if (playerInfo.length > 0 && !viewedPlayer) {
+      const self = playerInfo.find(p => p.id === playerId.toString());
+      if (self) {
+        setViewedPlayer(self.id);
+      }
+    }
+
+    return () => {
+      wsClient.off(handler);
+    };
+  }, [playerInfo, playerId]);
+
+  useEffect(() => {
+    const playerToView = playerInfo.find(p => p.id === viewedPlayer);
+    setCurrentPlayer(playerToView || null);
+  }, [viewedPlayer, playerInfo]);
+
+  const handleDiceChange = (increment: boolean) => {
+    const newValue = challengeDice + (increment ? 1 : -1);
+    if (newValue >= 0) {
+      updateChallengeDice(Number(sessionCode), newValue);
+    }
+  };
+
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
@@ -93,7 +134,7 @@ const GamePage = () => {
           </CustomText>
           <View style={styles.diceControl}>
             <Pressable
-              onPress={() => setChallengeDice(prev => Math.max(0, prev - 1))}
+              onPress={() => handleDiceChange(false)}
               style={styles.diceButton}
             >
               <CustomText style={styles.diceButtonText}>-</CustomText>
@@ -102,7 +143,7 @@ const GamePage = () => {
             <CustomText style={styles.diceValue}>{challengeDice}</CustomText>
 
             <Pressable
-              onPress={() => setChallengeDice(prev => prev + 1)}
+              onPress={() => handleDiceChange(true)}
               style={styles.diceButton}
             >
               <CustomText style={styles.diceButtonText}>+</CustomText>
