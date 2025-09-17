@@ -36,6 +36,7 @@ const characterColors: { [key: string]: string } = {
   medic: '#19a557',
   soren: '#794c9f',
   navigator: '#794c9f',
+  '': 'gray',
 };
 
 export const getCharacterColor = (characterText: string): string => {

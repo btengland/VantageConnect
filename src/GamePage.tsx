@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from './components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from './components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
+import {
+  wsClient,
+  connectWebSocket,
+  readPlayers,
+  updateChallengeDice,
+  onChallengeDiceUpdate,
+} from './api';
 
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
     playerId: number;
-    sessionCode: string;
+    sessionCode: number;
   };
-
-  useEffect(() => {
-    console.log('Player ID:', playerId);
-  }, [playerId, sessionCode]);
 
   // Define icons once here
   const skillTokenIcons = [
@@ -32,7 +35,9 @@ const GamePage = () => {
   type SkillToken = { quantity: number };
   type Statuses = { heart: number; star: number; 'timer-sand-full': number };
   type Player = {
-    id: string;
+    id: number;
+    sessionCode: number;
+    playerNumber: number;
     name: string;
     character: string;
     escapePod: string;
@@ -46,9 +51,9 @@ const GamePage = () => {
 
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
-  const [viewedPlayer, setViewedPlayer] = useState('');
+  const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -66,6 +71,99 @@ const GamePage = () => {
       playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
   };
+
+  const rotatePlayers = (players: Player[], currentPlayerId: number) => {
+    const index = players.findIndex(p => p.id === currentPlayerId);
+    if (index === -1) return players; // fallback if not found
+
+    return [...players.slice(index), ...players.slice(0, index)];
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initWebSocket = async () => {
+      try {
+        await connectWebSocket();
+        console.log('WebSocket connected');
+
+        // Subscribe to player updates
+        readPlayers(sessionCode, playersFromBackend => {
+          if (!isMounted) return;
+
+          const players: Player[] = playersFromBackend.map((p, index) => ({
+            id: p.playerId || '',
+            sessionCode: p.sessionCode || '',
+            playerNumber: playersFromBackend.length - 1 - index,
+            name: '',
+            character: '',
+            escapePod: '',
+            location: '',
+            skillTokens: [
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+            ],
+            turn: p.turn,
+            journalText: '',
+            statuses: { heart: 0, star: 0, 'timer-sand-full': 0 },
+            impactDiceSlots: [],
+          }));
+
+          const rotatedPlayers = rotatePlayers(players, playerId);
+          setPlayerInfo(rotatedPlayers);
+
+          setViewedPlayer(prev => {
+            const exists = rotatedPlayers.find(p => p.id === prev?.id);
+            return exists || rotatedPlayers[0];
+          });
+          setLoading(false);
+        });
+      } catch (err) {
+        console.error('WebSocket connection failed:', err);
+        setLoading(false);
+      }
+    };
+
+    initWebSocket();
+
+    return () => {
+      isMounted = false;
+      wsClient.close();
+    };
+  }, [playerId, sessionCode]);
+
+  // console.log(playerInfo);
+
+  const handleDiceChange = (delta: number) => {
+    // 1️⃣ Update local state immediately (optimistic)
+    setChallengeDice(prev => {
+      const newVal = Math.max(0, prev + delta);
+
+      // 2️⃣ Send update to backend
+      updateChallengeDice(sessionCode, newVal);
+
+      return newVal;
+    });
+  };
+
+  useEffect(() => {
+    onChallengeDiceUpdate(newDice => {
+      setChallengeDice(newDice);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#025472" />
+        <CustomText>Loading game...</CustomText>
+      </View>
+    );
+  }
 
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
@@ -93,7 +191,7 @@ const GamePage = () => {
           </CustomText>
           <View style={styles.diceControl}>
             <Pressable
-              onPress={() => setChallengeDice(prev => Math.max(0, prev - 1))}
+              onPress={() => handleDiceChange(-1)}
               style={styles.diceButton}
             >
               <CustomText style={styles.diceButtonText}>-</CustomText>
@@ -102,7 +200,7 @@ const GamePage = () => {
             <CustomText style={styles.diceValue}>{challengeDice}</CustomText>
 
             <Pressable
-              onPress={() => setChallengeDice(prev => prev + 1)}
+              onPress={() => handleDiceChange(1)}
               style={styles.diceButton}
             >
               <CustomText style={styles.diceButtonText}>+</CustomText>
@@ -116,7 +214,7 @@ const GamePage = () => {
             {playerInfo.map(player => (
               <View key={player.id} style={styles.innerSidebar}>
                 <Pressable
-                  onPress={() => setViewedPlayer(player.id)}
+                  onPress={() => setViewedPlayer(player)}
                   style={[
                     styles.bubble,
                     { backgroundColor: getCharacterColor(player.character) },
@@ -131,7 +229,7 @@ const GamePage = () => {
                   </CustomText>
                 </Pressable>
 
-                {player.id === viewedPlayer && (
+                {player.id === viewedPlayer?.id && (
                   <View
                     style={[
                       styles.triangle,
@@ -143,9 +241,10 @@ const GamePage = () => {
             ))}
           </View>
 
-          {currentPlayer && (
+          {viewedPlayer && (
             <PlayerCard
-              player={currentPlayer}
+              currentPlayerId={playerId}
+              player={viewedPlayer}
               getCharacterColor={getCharacterColor}
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}
@@ -266,6 +365,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#b7c9d0',
   },
 });
 

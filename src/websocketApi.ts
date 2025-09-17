@@ -1,10 +1,11 @@
 import { Alert } from 'react-native';
 
-// websocketApi.ts
 export class GameWebSocket {
   private ws: WebSocket | null = null;
   private url: string;
   private messageHandlers: ((data: any) => void)[] = [];
+  private heartbeatInterval: any = null;
+  private reconnectTimeout: any = null;
 
   constructor(url: string) {
     this.url = url;
@@ -17,6 +18,9 @@ export class GameWebSocket {
       this.ws.onopen = () => {
         console.log('WebSocket connected');
         resolve();
+
+        // Start heartbeat (ping every 5 minutes)
+        this.startHeartbeat();
       };
 
       this.ws.onerror = err => {
@@ -35,6 +39,12 @@ export class GameWebSocket {
 
       this.ws.onclose = () => {
         console.log('WebSocket closed');
+
+        // Stop heartbeat when closed
+        this.stopHeartbeat();
+
+        // Attempt to reconnect after short delay
+        this.scheduleReconnect();
       };
     });
   }
@@ -56,7 +66,6 @@ export class GameWebSocket {
       }, 10000);
 
       handler = (data: any) => {
-        // Resolve on success OR error
         if (
           data.action === action ||
           data.action === 'error' ||
@@ -77,11 +86,17 @@ export class GameWebSocket {
     });
   }
 
+  onMessage(handler: (data: any) => void) {
+    this.messageHandlers.push(handler);
+  }
+
   off(handler: (data: any) => void) {
     this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
   }
 
   close() {
+    this.stopHeartbeat();
+    clearTimeout(this.reconnectTimeout);
     this.ws?.close();
     this.ws = null;
     this.messageHandlers = [];
@@ -89,5 +104,42 @@ export class GameWebSocket {
 
   isConnected(): boolean {
     return !!this.ws && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  // --- Heartbeat methods ---
+  private startHeartbeat() {
+    this.heartbeatInterval = setInterval(() => {
+      if (this.isConnected()) {
+        try {
+          this.sendMessage({ action: 'ping' });
+        } catch (err) {
+          console.warn('Heartbeat ping failed', err);
+        }
+      }
+    }, 3 * 60 * 1000); // every 5 minutes
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  // --- Auto-reconnect ---
+  private scheduleReconnect() {
+    if (this.reconnectTimeout) return; // Already scheduled
+
+    this.reconnectTimeout = setTimeout(async () => {
+      console.log('Attempting WebSocket reconnect...');
+      try {
+        await this.connect();
+        console.log('Reconnected successfully');
+      } catch (err) {
+        console.error('Reconnect failed, will retry...', err);
+        this.reconnectTimeout = null;
+        this.scheduleReconnect(); // try again
+      }
+    }, 3000); // wait 3 seconds before reconnect
   }
 }
