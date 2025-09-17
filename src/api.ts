@@ -26,17 +26,8 @@ export const joinGame = async (
   return await wsClient.once('joinSession');
 };
 
-export const readPlayers = (
-  sessionCode: number,
-  callback: (players: any[]) => void,
-) => {
+export const readPlayers = (sessionCode: number) => {
   wsClient.sendMessage({ action: 'readPlayers', sessionCode });
-
-  wsClient.onMessage((data: any) => {
-    if (data.action === 'updatePlayers') {
-      callback(data.players);
-    }
-  });
 };
 
 export const endTurn = async (
@@ -55,10 +46,10 @@ export const updateChallengeDice = (sessionCode: number, value: number) => {
   });
 };
 
-export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
+export const onGameUpdate = (callback: (game: any) => void) => {
   wsClient.onMessage((data: any) => {
-    if (data.action === 'updateChallengeDice') {
-      callback(data.challengeDice);
+    if (data.action === 'updateGame') {
+      callback(data.game);
     }
   });
 };
