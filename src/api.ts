@@ -55,7 +55,9 @@ export const updateChallengeDice = (sessionCode: number, value: number) => {
   });
 };
 
-export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
+export const onChallengeDiceUpdate = (
+  callback: (value: number, gameId?: number) => void,
+) => {
   wsClient.onMessage((data: any) => {
     if (data.action === 'updateChallengeDice') {
       callback(data.challengeDice);

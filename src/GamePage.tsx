@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from './components/ExitModal';
@@ -74,20 +74,36 @@ const GamePage = () => {
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
     const index = players.findIndex(p => p.id === currentPlayerId);
-    if (index === -1) return players; // fallback if not found
+    if (index === -1) return players;
 
     return [...players.slice(index), ...players.slice(0, index)];
   };
+
+  const myPlayer = playerInfo.find(p => p.id === playerId);
+  const isMyTurn = myPlayer?.turn ?? false;
+
+  const isMyTurnRef = useRef(false);
+  useEffect(() => {
+    isMyTurnRef.current = isMyTurn;
+  }, [isMyTurn]);
 
   useEffect(() => {
     let isMounted = true;
 
     const initWebSocket = async () => {
       try {
+        // 1️⃣ Connect WS
         await connectWebSocket();
         console.log('WebSocket connected');
 
-        // Subscribe to player updates
+        // 3️⃣ Subscribe to challengeDice updates
+        onChallengeDiceUpdate(newDice => {
+          if (!isMounted) return;
+          if (isMyTurnRef.current) return;
+          setChallengeDice(newDice);
+        });
+
+        // 4️⃣ Subscribe to player updates
         readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
 
@@ -120,6 +136,7 @@ const GamePage = () => {
             const exists = rotatedPlayers.find(p => p.id === prev?.id);
             return exists || rotatedPlayers[0];
           });
+
           setLoading(false);
         });
       } catch (err) {
@@ -149,12 +166,6 @@ const GamePage = () => {
       return newVal;
     });
   };
-
-  useEffect(() => {
-    onChallengeDiceUpdate(newDice => {
-      setChallengeDice(newDice);
-    });
-  }, []);
 
   if (loading) {
     return (
@@ -190,21 +201,25 @@ const GamePage = () => {
             Available Dice:
           </CustomText>
           <View style={styles.diceControl}>
-            <Pressable
-              onPress={() => handleDiceChange(-1)}
-              style={styles.diceButton}
-            >
-              <CustomText style={styles.diceButtonText}>-</CustomText>
-            </Pressable>
+            {isMyTurn && (
+              <Pressable
+                onPress={() => handleDiceChange(-1)}
+                style={styles.diceButton}
+              >
+                <CustomText style={styles.diceButtonText}>-</CustomText>
+              </Pressable>
+            )}
 
             <CustomText style={styles.diceValue}>{challengeDice}</CustomText>
 
-            <Pressable
-              onPress={() => handleDiceChange(1)}
-              style={styles.diceButton}
-            >
-              <CustomText style={styles.diceButtonText}>+</CustomText>
-            </Pressable>
+            {isMyTurn && (
+              <Pressable
+                onPress={() => handleDiceChange(1)}
+                style={styles.diceButton}
+              >
+                <CustomText style={styles.diceButtonText}>+</CustomText>
+              </Pressable>
+            )}
           </View>
         </View>
 
