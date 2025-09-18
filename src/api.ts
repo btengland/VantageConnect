@@ -39,6 +39,14 @@ export const readPlayers = (
   });
 };
 
+export const updatePlayer = (player: any) => {
+  wsClient.sendMessage({
+    action: 'updatePlayer',
+    playerId: player.id,
+    updates: player,
+  });
+};
+
 export const endTurn = async (
   sessionCode: number,
   currentPlayerId: number,

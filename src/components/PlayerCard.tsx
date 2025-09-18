@@ -20,15 +20,8 @@ import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
 import { getOrdinal, lightenColor } from '../utils';
 import { endTurn } from '../api';
 
-type SkillToken = {
-  quantity: number;
-};
-
-type ImpactDiceSlot = {
-  symbol: string;
-  checked: boolean;
-};
-
+type SkillToken = { quantity: number };
+type ImpactDiceSlot = { symbol: string; checked: boolean };
 type Player = {
   id: number;
   sessionCode: number;
@@ -40,11 +33,7 @@ type Player = {
   skillTokens: SkillToken[];
   turn: boolean;
   journalText: string;
-  statuses: {
-    heart: number;
-    star: number;
-    'timer-sand-full': number;
-  };
+  statuses: { heart: number; star: number; 'timer-sand-full': number };
   impactDiceSlots: ImpactDiceSlot[];
 };
 
@@ -63,44 +52,15 @@ function PlayerCard({
   skillTokenIcons,
   onUpdatePlayer,
 }: PlayerCardProps) {
+  const [localPlayer, setLocalPlayer] = useState(player);
   const [isLoading, setIsLoading] = useState(false);
-
   const pulseAnim = useRef(new Animated.Value(0)).current;
+  const isEditable = currentPlayerId === player.id;
 
-  const handleAddImpactSlot = () => {
-    const newSlots = [
-      ...player.impactDiceSlots,
-      { symbol: 'any', checked: false },
-    ];
-    onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
-  };
-
-  const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
-    const newSlots = [...player.impactDiceSlots];
-    newSlots[index] = newSlot;
-    onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
-  };
-
-  const handleRemoveImpactSlot = (index: number) => {
-    const newSlots = player.impactDiceSlots.filter((_, i) => i !== index);
-    onUpdatePlayer({ ...player, impactDiceSlots: newSlots });
-  };
-
-  const handleStatusChange = (
-    status: 'heart' | 'star' | 'timer-sand-full',
-    change: 1 | -1,
-  ) => {
-    const currentLevel = player.statuses[status];
-    const newLevel = Math.max(0, Math.min(6, currentLevel + change));
-    const newStatuses = { ...player.statuses, [status]: newLevel };
-    onUpdatePlayer({ ...player, statuses: newStatuses });
-  };
-
-  const handleJournalChange = (text: string) => {
-    onUpdatePlayer({ ...player, journalText: text });
-  };
-
-  const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
+  // Sync local state when parent player updates
+  useEffect(() => {
+    setLocalPlayer(player);
+  }, [player]);
 
   useEffect(() => {
     Animated.loop(
@@ -121,14 +81,52 @@ function PlayerCard({
     ).start();
   }, [pulseAnim]);
 
+  const updatePlayer = (updates: Partial<Player>) => {
+    const updated = { ...localPlayer, ...updates };
+    setLocalPlayer(updated);
+    onUpdatePlayer(updated);
+  };
+
+  const handleAddImpactSlot = () => {
+    if (!isEditable) return;
+    updatePlayer({
+      impactDiceSlots: [
+        ...localPlayer.impactDiceSlots,
+        { symbol: 'any', checked: false },
+      ],
+    });
+  };
+
+  const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
+    if (!isEditable) return;
+    const slots = [...localPlayer.impactDiceSlots];
+    slots[index] = newSlot;
+    updatePlayer({ impactDiceSlots: slots });
+  };
+
+  const handleRemoveImpactSlot = (index: number) => {
+    if (!isEditable) return;
+    const slots = localPlayer.impactDiceSlots.filter((_, i) => i !== index);
+    updatePlayer({ impactDiceSlots: slots });
+  };
+
+  const handleStatusChange = (
+    status: 'heart' | 'star' | 'timer-sand-full',
+    change: 1 | -1,
+  ) => {
+    if (!isEditable) return;
+    const currentLevel = localPlayer.statuses[status];
+    const newLevel = Math.max(0, Math.min(6, currentLevel + change));
+    updatePlayer({ statuses: { ...localPlayer.statuses, [status]: newLevel } });
+  };
+
   const handleEndTurn = async () => {
+    if (!isEditable) return;
     try {
       setIsLoading(true);
-      await endTurn(player.sessionCode, player.id);
-      // optionally update local state if needed:
-      onUpdatePlayer({ ...player, turn: false });
+      await endTurn(localPlayer.sessionCode, localPlayer.id);
+      updatePlayer({ turn: false });
     } catch (err) {
-      setIsLoading(false);
       console.error('End turn failed', err);
     } finally {
       setIsLoading(false);
@@ -137,6 +135,8 @@ function PlayerCard({
 
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
+
+  const lighterBg = lightenColor(getCharacterColor(localPlayer.character), 0.8);
 
   return (
     <KeyboardAvoidingView
@@ -150,18 +150,13 @@ function PlayerCard({
         >
           {/* Header */}
           <CustomText style={styles.sectionHeader} small bold>
-            {getOrdinal(Number(player?.playerNumber) + 1)} Player
+            {getOrdinal(localPlayer.playerNumber)} Player
           </CustomText>
 
-          {/* Current Turn Section */}
-          {player.turn && player.id === currentPlayerId && (
+          {/* Current Turn */}
+          {localPlayer.turn && localPlayer.id === currentPlayerId && (
             <View style={styles.buttonContainer}>
-              <View
-                style={[
-                  styles.turnTextContainer,
-                  player.turn && styles.myTurnBackground,
-                ]}
-              >
+              <View style={[styles.turnTextContainer, styles.myTurnBackground]}>
                 <CustomText style={styles.turnText} small bold>
                   It's your turn
                 </CustomText>
@@ -181,8 +176,10 @@ function PlayerCard({
             </CustomText>
             <TextInput
               style={styles.value}
-              value={player.name}
+              value={localPlayer.name}
               placeholder="Enter your name"
+              editable={isEditable}
+              onChangeText={text => updatePlayer({ name: text })}
             />
           </View>
 
@@ -193,16 +190,19 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.character}
+                selectedValue={localPlayer.character}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
                 itemStyle={styles.pickerItem}
+                enabled={isEditable}
+                onValueChange={value => updatePlayer({ character: value })}
               >
                 {renderPickerItems(CHARACTERS)}
               </Picker>
             </View>
           </View>
+
           {/* Escape Pod Picker */}
           <View style={styles.row}>
             <CustomText style={styles.label} small bold>
@@ -210,11 +210,13 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.escapePod}
+                selectedValue={localPlayer.escapePod}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
                 itemStyle={styles.pickerItem}
+                enabled={isEditable}
+                onValueChange={value => updatePlayer({ escapePod: value })}
               >
                 {renderPickerItems(ESCAPE_PODS)}
               </Picker>
@@ -253,7 +255,9 @@ function PlayerCard({
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.locationInput, { color: lighterBg }]}
-                value={player.location}
+                value={localPlayer.location}
+                editable={isEditable}
+                onChangeText={text => updatePlayer({ location: text })}
               />
             </Animated.View>
           </View>
@@ -264,7 +268,7 @@ function PlayerCard({
               Skill Tokens
             </CustomText>
             <View style={styles.skillTokenGrid}>
-              {player.skillTokens.map((token, index) => (
+              {localPlayer.skillTokens.map((token, index) => (
                 <View key={index} style={styles.skillTokenBox}>
                   <View style={styles.iconBox}>
                     <View style={styles.tokenContent}>
@@ -278,7 +282,18 @@ function PlayerCard({
                         </View>
                       </View>
                       <View style={styles.counterContainer}>
-                        <Pressable style={styles.tokenButton}>
+                        <Pressable
+                          style={styles.tokenButton}
+                          onPress={() => {
+                            if (!isEditable) return;
+                            const newTokens = [...localPlayer.skillTokens];
+                            newTokens[index].quantity = Math.max(
+                              0,
+                              token.quantity - 1,
+                            );
+                            updatePlayer({ skillTokens: newTokens });
+                          }}
+                        >
                           <CustomText style={styles.tokenButtonText}>
                             -
                           </CustomText>
@@ -286,7 +301,15 @@ function PlayerCard({
                         <CustomText style={styles.tokenQuantity}>
                           {token.quantity}
                         </CustomText>
-                        <Pressable style={styles.tokenButton}>
+                        <Pressable
+                          style={styles.tokenButton}
+                          onPress={() => {
+                            if (!isEditable) return;
+                            const newTokens = [...localPlayer.skillTokens];
+                            newTokens[index].quantity += 1;
+                            updatePlayer({ skillTokens: newTokens });
+                          }}
+                        >
                           <CustomText style={styles.tokenButtonText}>
                             +
                           </CustomText>
@@ -299,16 +322,17 @@ function PlayerCard({
             </View>
           </View>
 
-          {/* Impact Dice Grid */}
+          {/* Impact Dice */}
           <View style={{ marginTop: 16 }}>
             <CustomText style={styles.subHeader} small bold>
               Impact Dice Slots
             </CustomText>
             <View style={styles.impactGrid}>
-              {player.impactDiceSlots.map((slot, index) => (
+              {localPlayer.impactDiceSlots.map((slot, index) => (
                 <View key={index} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
+                      isEditable &&
                       handleUpdateImpactSlot(index, {
                         ...slot,
                         checked: !slot.checked,
@@ -329,15 +353,18 @@ function PlayerCard({
                     <IconPicker
                       options={IMPACT_SYMBOLS}
                       selectedValue={slot.symbol}
-                      onValueChange={itemValue =>
+                      onValueChange={value =>
+                        isEditable &&
                         handleUpdateImpactSlot(index, {
                           ...slot,
-                          symbol: itemValue,
+                          symbol: value,
                         })
                       }
                     />
                   </View>
-                  <Pressable onPress={() => handleRemoveImpactSlot(index)}>
+                  <Pressable
+                    onPress={() => isEditable && handleRemoveImpactSlot(index)}
+                  >
                     <MaterialCommunityIcons
                       name="delete"
                       size={24}
@@ -347,13 +374,15 @@ function PlayerCard({
                 </View>
               ))}
             </View>
-            <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
-              <MaterialCommunityIcons name="flash" size={24} color="white" />
-              <CustomText style={styles.addButtonText}>Add Slot</CustomText>
-            </Pressable>
+            {isEditable && (
+              <Pressable style={styles.addButton} onPress={handleAddImpactSlot}>
+                <MaterialCommunityIcons name="flash" size={24} color="white" />
+                <CustomText style={styles.addButtonText}>Add Slot</CustomText>
+              </Pressable>
+            )}
           </View>
 
-          {/* Status Box */}
+          {/* Status Updates */}
           <View style={{ marginTop: 16 }}>
             <CustomText style={styles.subHeader} small bold>
               Status Updates
@@ -371,18 +400,20 @@ function PlayerCard({
                       <Pressable
                         key={i}
                         onPress={() => {
-                          const newStatuses = {
-                            ...player.statuses,
-                            [status]: i + 1,
-                          };
-                          onUpdatePlayer({ ...player, statuses: newStatuses });
+                          if (!isEditable) return;
+                          updatePlayer({
+                            statuses: {
+                              ...localPlayer.statuses,
+                              [status]: i + 1,
+                            },
+                          });
                         }}
                       >
                         <View
                           style={[
                             styles.statusDot,
                             i <
-                            player.statuses[
+                            localPlayer.statuses[
                               status as 'heart' | 'star' | 'timer-sand-full'
                             ]
                               ? styles.statusDotFilled
@@ -394,12 +425,7 @@ function PlayerCard({
                   </View>
                   <View style={styles.statusControls}>
                     <Pressable
-                      onPress={() =>
-                        handleStatusChange(
-                          status as 'heart' | 'star' | 'timer-sand-full',
-                          -1,
-                        )
-                      }
+                      onPress={() => handleStatusChange(status as any, -1)}
                     >
                       <MaterialCommunityIcons
                         name="minus"
@@ -409,18 +435,13 @@ function PlayerCard({
                     </Pressable>
                     <CustomText style={styles.statusLevel}>
                       {
-                        player.statuses[
+                        localPlayer.statuses[
                           status as 'heart' | 'star' | 'timer-sand-full'
                         ]
                       }
                     </CustomText>
                     <Pressable
-                      onPress={() =>
-                        handleStatusChange(
-                          status as 'heart' | 'star' | 'timer-sand-full',
-                          1,
-                        )
-                      }
+                      onPress={() => handleStatusChange(status as any, 1)}
                     >
                       <MaterialCommunityIcons
                         name="plus"
@@ -442,9 +463,10 @@ function PlayerCard({
             <TextInput
               style={styles.journalInput}
               multiline
-              onChangeText={handleJournalChange}
-              value={player.journalText}
+              value={localPlayer.journalText}
               placeholder="Write your notes here..."
+              editable={isEditable}
+              onChangeText={text => updatePlayer({ journalText: text })}
             />
           </View>
         </ScrollView>

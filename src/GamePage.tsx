@@ -107,10 +107,10 @@ const GamePage = () => {
         readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
 
-          const players: Player[] = playersFromBackend.map((p, index) => ({
+          const players: Player[] = playersFromBackend.map(p => ({
             id: p.playerId || '',
             sessionCode: p.sessionCode || '',
-            playerNumber: playersFromBackend.length - 1 - index,
+            playerNumber: Number(p.playerNumber),
             name: '',
             character: '',
             escapePod: '',
@@ -129,7 +129,13 @@ const GamePage = () => {
             impactDiceSlots: [],
           }));
 
-          const rotatedPlayers = rotatePlayers(players, playerId);
+          const rotatedPlayers = rotatePlayers(players, playerId).map(rp => {
+            const original = players.find(p => p.id === rp.id);
+            return {
+              ...rp,
+              playerNumber: original?.playerNumber ?? rp.playerNumber,
+            };
+          });
           setPlayerInfo(rotatedPlayers);
 
           setViewedPlayer(prev => {
@@ -152,8 +158,6 @@ const GamePage = () => {
       wsClient.close();
     };
   }, [playerId, sessionCode]);
-
-  // console.log(playerInfo);
 
   const handleDiceChange = (delta: number) => {
     // 1️⃣ Update local state immediately (optimistic)
