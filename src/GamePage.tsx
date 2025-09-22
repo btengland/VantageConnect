@@ -11,6 +11,7 @@ import {
   wsClient,
   connectWebSocket,
   readPlayers,
+  updatePlayer,
   updateChallengeDice,
   onChallengeDiceUpdate,
 } from './api';
@@ -66,10 +67,14 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
-  const handleUpdatePlayer = (updatedPlayer: any) => {
-    setPlayerInfo(
-      playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
+  const handleUpdatePlayer = (updatedPlayer: Player) => {
+    // 1️⃣ Optimistically update UI (optional, for instant feedback)
+    setPlayerInfo(prev =>
+      prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
+
+    // 2️⃣ Send update to backend via WebSocket
+    updatePlayer(updatedPlayer);
   };
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {

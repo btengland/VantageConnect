@@ -57,11 +57,6 @@ function PlayerCard({
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
 
-  // Sync local state when parent player updates
-  useEffect(() => {
-    setLocalPlayer(player);
-  }, [player]);
-
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
