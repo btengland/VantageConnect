@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { debounce } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from './components/ExitModal';
@@ -89,6 +90,7 @@ const GamePage = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let diceHandler: ((newDice: number) => void) | null = null;
 
     const initWebSocket = async () => {
       try {
@@ -96,14 +98,15 @@ const GamePage = () => {
         await connectWebSocket();
         console.log('WebSocket connected');
 
-        // 3️⃣ Subscribe to challengeDice updates
-        onChallengeDiceUpdate(newDice => {
+        // 2️⃣ Handle challengeDice updates
+        diceHandler = (newDice: number) => {
           if (!isMounted) return;
-          if (isMyTurnRef.current) return;
+          if (isMyTurnRef.current) return; // ignore updates if it's my turn
           setChallengeDice(newDice);
-        });
+        };
+        onChallengeDiceUpdate(diceHandler);
 
-        // 4️⃣ Subscribe to player updates
+        // 3️⃣ Handle player updates
         readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
 
@@ -154,18 +157,25 @@ const GamePage = () => {
     initWebSocket();
 
     return () => {
+      // cleanup
       isMounted = false;
-      wsClient.close();
+      if (diceHandler) wsClient.off(diceHandler);
     };
   }, [playerId, sessionCode]);
 
+  // Debounced dice update so rapid clicks don't crash the app
+  const debouncedUpdateDice = useRef(
+    debounce((val: number) => {
+      updateChallengeDice(sessionCode, val);
+    }, 300), // 300ms delay
+  ).current;
+
   const handleDiceChange = (delta: number) => {
-    // 1️⃣ Update local state immediately (optimistic)
     setChallengeDice(prev => {
       const newVal = Math.max(0, prev + delta);
 
-      // 2️⃣ Send update to backend
-      updateChallengeDice(sessionCode, newVal);
+      // Use debounced update to prevent crashing
+      debouncedUpdateDice(newVal);
 
       return newVal;
     });
