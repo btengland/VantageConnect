@@ -26,17 +26,46 @@ export const joinGame = async (
   return await wsClient.once('joinSession');
 };
 
-export const readPlayers = (
-  sessionCode: number,
-  callback: (players: any[]) => void,
-) => {
-  wsClient.sendMessage({ action: 'readPlayers', sessionCode });
+// --- Player Subscription ---
+let playerUpdateCallback: ((players: any[]) => void) | null = null;
+let playerPatchCallback:
+  | ((patch: { playerId: number; updates: any }) => void)
+  | null = null;
+let isPlayerListenerAttached = false;
+
+function attachPlayerListener() {
+  if (isPlayerListenerAttached) return;
 
   wsClient.onMessage((data: any) => {
-    if (data.action === 'updatePlayers') {
-      callback(data.players);
+    if (data.action === 'updatePlayers' && playerUpdateCallback) {
+      playerUpdateCallback(data.players);
+    } else if (data.action === 'playerPatched' && playerPatchCallback) {
+      playerPatchCallback(data);
     }
   });
+
+  isPlayerListenerAttached = true;
+}
+
+export const subscribeToPlayers = (
+  sessionCode: number,
+  onUpdate: (players: any[]) => void,
+  onPatch: (patch: { playerId: number; updates: any }) => void,
+) => {
+  attachPlayerListener();
+  playerUpdateCallback = onUpdate;
+  playerPatchCallback = onPatch;
+
+  // Request initial player list
+  wsClient.sendMessage({ action: 'readPlayers', sessionCode });
+
+  // Return an unsubscribe function for cleanup
+  return () => {
+    playerUpdateCallback = null;
+    playerPatchCallback = null;
+    // Note: We are not removing the listener from wsClient to keep it simple.
+    // A more robust implementation might track multiple subscribers.
+  };
 };
 
 export const updatePlayer = (player: any) => {

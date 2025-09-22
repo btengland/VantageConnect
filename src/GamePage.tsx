@@ -11,7 +11,7 @@ import { getCharacterColor } from './utils';
 import {
   wsClient,
   connectWebSocket,
-  readPlayers,
+  subscribeToPlayers,
   updateChallengeDice,
   onChallengeDiceUpdate,
   updatePlayer,
@@ -90,105 +90,99 @@ const GamePage = () => {
     isMyTurnRef.current = isMyTurn;
   }, [isMyTurn]);
 
+  const getSanitizedArray = (data: any, defaultData: any[]) => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (typeof data === 'object' && data !== null) {
+      return Object.values(data);
+    }
+    return defaultData;
+  };
+
+  const transformPlayerFromBackend = (p: any): Player => ({
+    id: p.playerId,
+    sessionCode: p.sessionCode,
+    playerNumber: Number(p.playerNumber) || 0,
+    name: p.name || '',
+    character: p.character || '',
+    escapePod: p.escapePod || '',
+    location: p.location || '',
+    skillTokens: getSanitizedArray(p.skillTokens, [
+      { quantity: 0 },
+      { quantity: 0 },
+      { quantity: 0 },
+      { quantity: 0 },
+      { quantity: 0 },
+      { quantity: 0 },
+    ]),
+    turn: p.turn || false,
+    journalText: p.journalText || '',
+    statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
+    impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
+  });
+
   useEffect(() => {
     let isMounted = true;
     let diceHandler: ((newDice: number) => void) | null = null;
+    let unsubscribeFromPlayers: (() => void) | null = null;
 
     const initWebSocket = async () => {
       try {
-        // 1️⃣ Connect WS
         await connectWebSocket();
         console.log('WebSocket connected');
 
-        // 2️⃣ Handle challengeDice updates
         diceHandler = (newDice: number) => {
-          if (!isMounted) return;
-          if (isMyTurnRef.current) return; // ignore updates if it's my turn
+          if (!isMounted || isMyTurnRef.current) return;
           setChallengeDice(newDice);
         };
         onChallengeDiceUpdate(diceHandler);
 
-        // 3️⃣ Handle player updates
-        readPlayers(sessionCode, playersFromBackend => {
-          if (!isMounted) return;
+        unsubscribeFromPlayers = subscribeToPlayers(
+          sessionCode,
+          // onUpdate (full player list)
+          playersFromBackend => {
+            if (!isMounted) return;
 
-          const getSanitizedArray = (data: any, defaultData: any[]) => {
-            if (Array.isArray(data)) {
-              return data;
-            }
-            if (typeof data === 'object' && data !== null) {
-              return Object.values(data);
-            }
-            return defaultData;
-          };
+            const transformedPlayers = playersFromBackend.map(
+              transformPlayerFromBackend,
+            );
 
-          const transformedBackendPlayers = playersFromBackend.map(p => ({
-            id: p.playerId,
-            sessionCode: p.sessionCode,
-            playerNumber: Number(p.playerNumber) || 0,
-            name: p.name || '',
-            character: p.character || '',
-            escapePod: p.escapePod || '',
-            location: p.location || '',
-            skillTokens: getSanitizedArray(p.skillTokens, [
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-            ]),
-            turn: p.turn || false,
-            journalText: p.journalText || '',
-            statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
-            impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
-          }));
-
-          setPlayerInfo(prevPlayerInfo => {
-            let finalPlayers;
-            if (prevPlayerInfo.length === 0) {
-              finalPlayers = transformedBackendPlayers;
-              if (isMounted) {
+            setPlayerInfo(prevInfo => {
+              // On initial load, just set the players
+              if (prevInfo.length === 0) {
                 setLoading(false);
+                return rotatePlayers(transformedPlayers, playerId);
               }
-            } else {
-              const myPlayerFromLocalState = prevPlayerInfo.find(
-                p => p.id === playerId,
-              );
-              const myPlayerFromBackend = transformedBackendPlayers.find(
-                p => p.id === playerId,
-              );
-
-              let mergedMyPlayer = myPlayerFromLocalState;
-
-              if (myPlayerFromLocalState && myPlayerFromBackend) {
-                mergedMyPlayer = {
-                  ...myPlayerFromLocalState,
-                  turn: myPlayerFromBackend.turn,
-                };
-              }
-
-              finalPlayers = transformedBackendPlayers.map(backendPlayer =>
-                backendPlayer.id === playerId && mergedMyPlayer
-                  ? mergedMyPlayer
-                  : backendPlayer,
-              );
-            }
-            return rotatePlayers(finalPlayers, playerId);
-          });
-        });
+              // For subsequent full updates, be more careful
+              // This logic can be simplified if backend is trusted as authoritative
+              return rotatePlayers(transformedPlayers, playerId);
+            });
+          },
+          // onPatch (partial update for a single player)
+          patch => {
+            if (!isMounted) return;
+            setPlayerInfo(prevPlayers =>
+              prevPlayers.map(p =>
+                p.id === patch.playerId
+                  ? { ...p, ...patch.updates }
+                  : p,
+              ),
+            );
+          },
+        );
       } catch (err) {
         console.error('WebSocket connection failed:', err);
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     initWebSocket();
 
     return () => {
-      // cleanup
       isMounted = false;
       if (diceHandler) wsClient.off(diceHandler);
+      if (unsubscribeFromPlayers) unsubscribeFromPlayers();
     };
   }, [playerId, sessionCode]);
 
