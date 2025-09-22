@@ -69,8 +69,8 @@ const GamePage = () => {
   };
 
   const handleUpdatePlayer = (updatedPlayer: Player) => {
-    setPlayerInfo(
-      playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
+    setPlayerInfo(prev =>
+      prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
     debouncedUpdatePlayer(updatedPlayer);
   };
@@ -152,10 +152,25 @@ const GamePage = () => {
                 setLoading(false);
               }
             } else {
-              const myPlayer = prevPlayerInfo.find(p => p.id === playerId);
+              const myPlayerFromLocalState = prevPlayerInfo.find(
+                p => p.id === playerId,
+              );
+              const myPlayerFromBackend = transformedBackendPlayers.find(
+                p => p.id === playerId,
+              );
+
+              let mergedMyPlayer = myPlayerFromLocalState;
+
+              if (myPlayerFromLocalState && myPlayerFromBackend) {
+                mergedMyPlayer = {
+                  ...myPlayerFromLocalState,
+                  turn: myPlayerFromBackend.turn,
+                };
+              }
+
               finalPlayers = transformedBackendPlayers.map(backendPlayer =>
-                backendPlayer.id === playerId && myPlayer
-                  ? myPlayer
+                backendPlayer.id === playerId && mergedMyPlayer
+                  ? mergedMyPlayer
                   : backendPlayer,
               );
             }
