@@ -10,6 +10,7 @@ import {
   Image,
   Easing,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
@@ -160,10 +161,22 @@ function PlayerCard({
                   It's your turn
                 </CustomText>
               </View>
-              <Pressable disabled={isLoading} onPress={handleEndTurn}>
-                <CustomText style={SharedStyles.button} small bold>
-                  Done
-                </CustomText>
+
+              <Pressable
+                disabled={isLoading}
+                onPress={handleEndTurn}
+                style={({ pressed }) => [
+                  SharedStyles.button,
+                  { opacity: pressed || isLoading ? 0.5 : 1 },
+                ]}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <CustomText style={SharedStyles.button} small bold>
+                    Done
+                  </CustomText>
+                )}
               </Pressable>
             </View>
           )}
