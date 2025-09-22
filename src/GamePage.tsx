@@ -112,21 +112,14 @@ const GamePage = () => {
         readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
 
-          const getSkillTokens = tokens => {
-            if (Array.isArray(tokens)) {
-              return tokens;
+          const getSanitizedArray = (data: any, defaultData: any[]) => {
+            if (Array.isArray(data)) {
+              return data;
             }
-            if (typeof tokens === 'object' && tokens !== null) {
-              return Object.values(tokens);
+            if (typeof data === 'object' && data !== null) {
+              return Object.values(data);
             }
-            return [
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-            ];
+            return defaultData;
           };
 
           const transformedBackendPlayers = playersFromBackend.map(p => ({
@@ -137,11 +130,18 @@ const GamePage = () => {
             character: p.character || '',
             escapePod: p.escapePod || '',
             location: p.location || '',
-            skillTokens: getSkillTokens(p.skillTokens),
+            skillTokens: getSanitizedArray(p.skillTokens, [
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+            ]),
             turn: p.turn || false,
             journalText: p.journalText || '',
             statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
-            impactDiceSlots: p.impactDiceSlots || [],
+            impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
           }));
 
           setPlayerInfo(prevPlayerInfo => {
