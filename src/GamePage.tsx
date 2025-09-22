@@ -144,23 +144,15 @@ const GamePage = () => {
             impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
           }));
 
-          setPlayerInfo(prevPlayerInfo => {
-            let finalPlayers;
-            if (prevPlayerInfo.length === 0) {
-              finalPlayers = transformedBackendPlayers;
-              if (isMounted) {
-                setLoading(false);
-              }
-            } else {
-              const myPlayer = prevPlayerInfo.find(p => p.id === playerId);
-              finalPlayers = transformedBackendPlayers.map(backendPlayer =>
-                backendPlayer.id === playerId && myPlayer
-                  ? myPlayer
-                  : backendPlayer,
-              );
-            }
-            return rotatePlayers(finalPlayers, playerId);
-          });
+          const rotatedPlayers = rotatePlayers(
+            transformedBackendPlayers,
+            playerId,
+          );
+          setPlayerInfo(rotatedPlayers);
+
+          if (loading) {
+            setLoading(false);
+          }
         });
       } catch (err) {
         console.error('WebSocket connection failed:', err);

@@ -125,7 +125,6 @@ function PlayerCard({
     try {
       setIsLoading(true);
       await endTurn(localPlayer.sessionCode, localPlayer.id);
-      updatePlayer({ turn: false });
     } catch (err) {
       console.error('End turn failed', err);
     } finally {
