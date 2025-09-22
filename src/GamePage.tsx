@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { debounce } from 'lodash';
+import { debounce, isEqual } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from './components/ExitModal';
@@ -14,6 +14,7 @@ import {
   readPlayers,
   updateChallengeDice,
   onChallengeDiceUpdate,
+  updatePlayer,
 } from './api';
 
 const GamePage = () => {
@@ -67,10 +68,11 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
-  const handleUpdatePlayer = (updatedPlayer: any) => {
-    setPlayerInfo(
-      playerInfo.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
+  const handleUpdatePlayer = (updatedPlayer: Player) => {
+    setPlayerInfo(prev =>
+      prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
+    debouncedUpdatePlayer(updatedPlayer);
   };
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
@@ -110,43 +112,70 @@ const GamePage = () => {
         readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
 
-          const players: Player[] = playersFromBackend.map(p => ({
-            id: p.playerId || '',
-            sessionCode: p.sessionCode || '',
-            playerNumber: Number(p.playerNumber),
-            name: '',
-            character: '',
-            escapePod: '',
-            location: '',
-            skillTokens: [
+          const getSanitizedArray = (data: any, defaultData: any[]) => {
+            if (Array.isArray(data)) {
+              return data;
+            }
+            if (typeof data === 'object' && data !== null) {
+              return Object.values(data);
+            }
+            return defaultData;
+          };
+
+          const transformedBackendPlayers = playersFromBackend.map(p => ({
+            id: p.playerId,
+            sessionCode: p.sessionCode,
+            playerNumber: Number(p.playerNumber) || 0,
+            name: p.name || '',
+            character: p.character || '',
+            escapePod: p.escapePod || '',
+            location: p.location || '',
+            skillTokens: getSanitizedArray(p.skillTokens, [
               { quantity: 0 },
               { quantity: 0 },
               { quantity: 0 },
               { quantity: 0 },
               { quantity: 0 },
               { quantity: 0 },
-            ],
-            turn: p.turn,
-            journalText: '',
-            statuses: { heart: 0, star: 0, 'timer-sand-full': 0 },
-            impactDiceSlots: [],
+            ]),
+            turn: p.turn || false,
+            journalText: p.journalText || '',
+            statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
+            impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
           }));
 
-          const rotatedPlayers = rotatePlayers(players, playerId).map(rp => {
-            const original = players.find(p => p.id === rp.id);
-            return {
-              ...rp,
-              playerNumber: original?.playerNumber ?? rp.playerNumber,
-            };
-          });
-          setPlayerInfo(rotatedPlayers);
+          setPlayerInfo(prevPlayerInfo => {
+            let finalPlayers;
+            if (prevPlayerInfo.length === 0) {
+              finalPlayers = transformedBackendPlayers;
+              if (isMounted) {
+                setLoading(false);
+              }
+            } else {
+              const myPlayerFromLocalState = prevPlayerInfo.find(
+                p => p.id === playerId,
+              );
+              const myPlayerFromBackend = transformedBackendPlayers.find(
+                p => p.id === playerId,
+              );
 
-          setViewedPlayer(prev => {
-            const exists = rotatedPlayers.find(p => p.id === prev?.id);
-            return exists || rotatedPlayers[0];
-          });
+              let mergedMyPlayer = myPlayerFromLocalState;
 
-          setLoading(false);
+              if (myPlayerFromLocalState && myPlayerFromBackend) {
+                mergedMyPlayer = {
+                  ...myPlayerFromLocalState,
+                  turn: myPlayerFromBackend.turn,
+                };
+              }
+
+              finalPlayers = transformedBackendPlayers.map(backendPlayer =>
+                backendPlayer.id === playerId && mergedMyPlayer
+                  ? mergedMyPlayer
+                  : backendPlayer,
+              );
+            }
+            return rotatePlayers(finalPlayers, playerId);
+          });
         });
       } catch (err) {
         console.error('WebSocket connection failed:', err);
@@ -163,11 +192,32 @@ const GamePage = () => {
     };
   }, [playerId, sessionCode]);
 
+  useEffect(() => {
+    // Keep viewedPlayer in sync with playerInfo, and set initial viewed player
+    if (playerInfo.length > 0) {
+      if (viewedPlayer) {
+        const updatedViewedPlayer = playerInfo.find(p => p.id === viewedPlayer.id);
+        if (updatedViewedPlayer && !isEqual(updatedViewedPlayer, viewedPlayer)) {
+          setViewedPlayer(updatedViewedPlayer);
+        }
+      } else {
+        setViewedPlayer(playerInfo[0]);
+      }
+    }
+  }, [playerInfo]);
+
   // Debounced dice update so rapid clicks don't crash the app
   const debouncedUpdateDice = useRef(
     debounce((val: number) => {
       updateChallengeDice(sessionCode, val);
     }, 300), // 300ms delay
+  ).current;
+
+  // Debounced player update
+  const debouncedUpdatePlayer = useRef(
+    debounce((player: Player) => {
+      updatePlayer(player);
+    }, 500), // 500ms delay
   ).current;
 
   const handleDiceChange = (delta: number) => {

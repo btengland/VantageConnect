@@ -125,7 +125,6 @@ function PlayerCard({
     try {
       setIsLoading(true);
       await endTurn(localPlayer.sessionCode, localPlayer.id);
-      updatePlayer({ turn: false });
     } catch (err) {
       console.error('End turn failed', err);
     } finally {
@@ -198,7 +197,17 @@ function PlayerCard({
                 enabled={isEditable}
                 onValueChange={value => updatePlayer({ character: value })}
               >
-                {renderPickerItems(CHARACTERS)}
+                {/* First option disabled */}
+                <Picker.Item
+                  label="Select a character..."
+                  value=""
+                  enabled={false}
+                />
+
+                {/* Rest of the options */}
+                {CHARACTERS.map(c => (
+                  <Picker.Item key={c} label={c} value={c} />
+                ))}
               </Picker>
             </View>
           </View>
