@@ -112,6 +112,23 @@ const GamePage = () => {
         readPlayers(sessionCode, playersFromBackend => {
           if (!isMounted) return;
 
+          const getSkillTokens = tokens => {
+            if (Array.isArray(tokens)) {
+              return tokens;
+            }
+            if (typeof tokens === 'object' && tokens !== null) {
+              return Object.values(tokens);
+            }
+            return [
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+              { quantity: 0 },
+            ];
+          };
+
           const transformedBackendPlayers = playersFromBackend.map(p => ({
             id: p.playerId,
             sessionCode: p.sessionCode,
@@ -120,14 +137,7 @@ const GamePage = () => {
             character: p.character || '',
             escapePod: p.escapePod || '',
             location: p.location || '',
-            skillTokens: p.skillTokens || [
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-            ],
+            skillTokens: getSkillTokens(p.skillTokens),
             turn: p.turn || false,
             journalText: p.journalText || '',
             statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
