@@ -166,7 +166,6 @@ function PlayerCard({
                 disabled={isLoading}
                 onPress={handleEndTurn}
                 style={({ pressed }) => [
-                  SharedStyles.button,
                   { opacity: pressed || isLoading ? 0.5 : 1 },
                 ]}
               >
