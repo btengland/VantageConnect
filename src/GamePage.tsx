@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { debounce, isEqual } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
@@ -18,22 +18,22 @@ import {
   updatePlayer,
 } from './api';
 
+// Define icons once here, outside the component
+const skillTokenIcons = [
+  require('./assets/Move.png'),
+  require('./assets/Look.png'),
+  require('./assets/Engage.png'),
+  require('./assets/Help.png'),
+  require('./assets/Take.png'),
+  require('./assets/Overpower.png'),
+];
+
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
     playerId: number;
     sessionCode: number;
   };
-
-  // Define icons once here
-  const skillTokenIcons = [
-    require('./assets/Move.png'),
-    require('./assets/Look.png'),
-    require('./assets/Engage.png'),
-    require('./assets/Help.png'),
-    require('./assets/Take.png'),
-    require('./assets/Overpower.png'),
-  ];
 
   type SkillToken = { quantity: number };
   type Statuses = { heart: number; star: number; 'timer-sand-full': number };
@@ -71,6 +71,13 @@ const GamePage = () => {
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
+  const playerInfoRef = useRef(playerInfo);
+
+  const setPlayerInfoWithRef = useCallback((newState: Player[] | ((prevState: Player[]) => Player[])) => {
+    const newPlayerInfo = typeof newState === 'function' ? newState(playerInfoRef.current) : newState;
+    playerInfoRef.current = newPlayerInfo;
+    setPlayerInfo(newPlayerInfo);
+  }, []);
   const [loading, setLoading] = useState(true);
 
   const challengeDiceInitialized = useRef(false);
@@ -86,12 +93,18 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
-  const handleUpdatePlayer = (updatedPlayer: Player) => {
-    setPlayerInfo(prev =>
+  const debouncedUpdatePlayer = useRef(
+    debounce((player: Player) => {
+      updatePlayer(player);
+    }, 300), // 300ms delay
+  ).current;
+
+  const handleUpdatePlayer = useCallback((updatedPlayer: Player) => {
+    setPlayerInfoWithRef(prev =>
       prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
     debouncedUpdatePlayer(updatedPlayer);
-  };
+  }, [setPlayerInfoWithRef, debouncedUpdatePlayer]);
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
     const index = players.findIndex(p => p.id === currentPlayerId);
@@ -123,13 +136,6 @@ const GamePage = () => {
 
         onPlayersUpdate(
           (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
-            const getSanitizedArray = (data: any, defaultData: any[]) => {
-              if (Array.isArray(data)) return data;
-              if (typeof data === 'object' && data !== null)
-                return Object.values(data);
-              return defaultData;
-            };
-
             const playersFromBackend = gameData.players;
 
             // Only set initial challengeDice once
@@ -139,69 +145,85 @@ const GamePage = () => {
             }
 
             const transformedBackendPlayers = playersFromBackend.map(
-              (p: any) => ({
-                id: p.playerId,
-                sessionCode: p.sessionCode,
-                playerNumber: Number(p.playerNumber) || 0,
-                name: p.name || '',
-                character: p.character || '',
-                escapePod: p.escapePod || '',
-                location: p.location || '',
-                skillTokens: getSanitizedArray(p.skillTokens, [
-                  { quantity: 0 },
-                  { quantity: 0 },
-                  { quantity: 0 },
-                  { quantity: 0 },
-                  { quantity: 0 },
-                  { quantity: 0 },
-                ]),
-                turn: p.turn || false,
-                journalText: p.journalText || '',
-                statuses: p.statuses || {
-                  heart: 0,
-                  star: 0,
-                  'timer-sand-full': 0,
-                },
-                impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
-              }),
+              (p: BackendPlayer): Player => {
+                const defaultSkillTokens = Array(6).fill({ quantity: 0 });
+                // The backend sometimes sends an object instead of an array
+                const skillTokens =
+                  p.skillTokens && !Array.isArray(p.skillTokens)
+                    ? Object.values(p.skillTokens)
+                    : p.skillTokens || defaultSkillTokens;
+                const impactDiceSlots =
+                  p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
+                    ? Object.values(p.impactDiceSlots)
+                    : p.impactDiceSlots || [];
+
+                return {
+                  id: p.playerId,
+                  sessionCode: p.sessionCode,
+                  playerNumber: Number(p.playerNumber) || 0,
+                  name: p.name || '',
+                  character: p.character || '',
+                  escapePod: p.escapePod || '',
+                  location: p.location || '',
+                  skillTokens,
+                  turn: p.turn || false,
+                  journalText: p.journalText || '',
+                  statuses: p.statuses || {
+                    heart: 0,
+                    star: 0,
+                    'timer-sand-full': 0,
+                  },
+                  impactDiceSlots,
+                };
+              },
             );
 
-            setPlayerInfo(prevPlayerInfo => {
+            setPlayerInfoWithRef(prevPlayerInfo => {
               if (prevPlayerInfo.length === 0) {
                 setLoading(false);
                 return rotatePlayers(transformedBackendPlayers, playerId);
               }
 
-              // Create a map of the new players for easy lookup
               const backendPlayersMap = new Map(
-                transformedBackendPlayers.map((p: any) => [p.id, p]),
+                transformedBackendPlayers.map(p => [p.id, p]),
               );
 
-              // Merge the two lists
-              const mergedPlayers = prevPlayerInfo.map(localPlayer => {
-                const backendPlayer = backendPlayersMap.get(localPlayer.id);
-                if (backendPlayer) {
-                  // If it's the current user's player, merge carefully
-                  if (localPlayer.id === playerId) {
-                    return {
-                      ...localPlayer, // Keep local changes
-                      turn: backendPlayer.turn, // But always update turn status
-                    };
+              const mergedPlayers = prevPlayerInfo
+                .map(localPlayer => {
+                  const backendPlayer = backendPlayersMap.get(localPlayer.id);
+                  if (backendPlayer) {
+                    // This player exists in both lists.
+                    if (localPlayer.id === playerId) {
+                      // It's the current user. Preserve local state but take
+                      // authoritative updates from the server (like turn status).
+                      return {
+                        ...localPlayer,
+                        turn: backendPlayer.turn,
+                      };
+                    }
+                    // It's another player. Use the server's version.
+                    return backendPlayer;
                   }
-                  // For other players, just use the backend data
-                  return backendPlayer;
-                }
-                return localPlayer;
-              });
+                  // This player is not in the backend list; they must have left.
+                  return null;
+                })
+                .filter((p): p is Player => p !== null);
 
-              // Add any new players from the backend
-              transformedBackendPlayers.forEach((backendPlayer: any) => {
-                if (!prevPlayerInfo.some(p => p.id === backendPlayer.id)) {
+              // Add any new players who are in the backend list but not local.
+              const currentIds = new Set(mergedPlayers.map(p => p.id));
+              transformedBackendPlayers.forEach(backendPlayer => {
+                if (!currentIds.has(backendPlayer.id)) {
                   mergedPlayers.push(backendPlayer);
                 }
               });
 
-              return rotatePlayers(mergedPlayers, playerId);
+              const newPlayerOrder = rotatePlayers(mergedPlayers, playerId);
+
+              if (isEqual(newPlayerOrder, prevPlayerInfo)) {
+                return prevPlayerInfo;
+              }
+
+              return newPlayerOrder;
             });
           },
         );
@@ -244,23 +266,13 @@ const GamePage = () => {
     }, 300), // 300ms delay
   ).current;
 
-  // Debounced player update
-  const debouncedUpdatePlayer = useRef(
-    debounce((player: Player) => {
-      updatePlayer(player);
-    }, 500), // 500ms delay
-  ).current;
-
-  const handleDiceChange = (delta: number) => {
+  const handleDiceChange = useCallback((delta: number) => {
     setChallengeDice(prev => {
       const newVal = Math.max(0, prev + delta);
-
-      // Use debounced update to prevent crashing
       debouncedUpdateDice(newVal);
-
       return newVal;
     });
-  };
+  }, [debouncedUpdateDice]);
 
   if (loading) {
     return (
