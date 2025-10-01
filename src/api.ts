@@ -26,17 +26,36 @@ export const joinGame = async (
   return await wsClient.once('joinSession');
 };
 
-export const readPlayers = (
-  sessionCode: number,
-  callback: (players: any[]) => void,
-) => {
-  wsClient.sendMessage({ action: 'readPlayers', sessionCode });
+// A map to hold callbacks for different message actions
+const messageCallbacks: { [action: string]: ((data: any) => void)[] } = {};
 
-  wsClient.onMessage((data: any) => {
-    if (data.action === 'updatePlayers') {
-      callback(data.players);
-    }
+// Single message handler to dispatch to registered callbacks
+wsClient.onMessage((data: any) => {
+  if (data.action && messageCallbacks[data.action]) {
+    messageCallbacks[data.action].forEach(callback => callback(data));
+  }
+});
+
+// Function to register a callback for a specific action
+const on = (action: string, callback: (data: any) => void) => {
+  if (!messageCallbacks[action]) {
+    messageCallbacks[action] = [];
+  }
+  messageCallbacks[action].push(callback);
+};
+
+export const readPlayers = (sessionCode: number) => {
+  wsClient.sendMessage({ action: 'readPlayers', sessionCode });
+};
+
+export const onPlayersUpdate = (callback: (data: any) => void) => {
+  on('updatePlayers', data => {
+    callback(data); // send the whole object { players, challengeDice, code }
   });
+};
+
+export const readChallengeDice = (sessionCode: number) => {
+  wsClient.sendMessage({ action: 'readChallengeDice', gameId: sessionCode });
 };
 
 export const updatePlayer = (player: any) => {
@@ -63,11 +82,9 @@ export const updateChallengeDice = (sessionCode: number, value: number) => {
   });
 };
 
-export const onChallengeDiceUpdate = (
-  callback: (value: number, gameId?: number) => void,
-) => {
-  wsClient.onMessage((data: any) => {
-    if (data.action === 'updateChallengeDice') {
+export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
+  on('updateChallengeDice', data => {
+    if (data.challengeDice !== undefined) {
       callback(data.challengeDice);
     }
   });

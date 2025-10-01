@@ -9,11 +9,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
 import {
-  wsClient,
   connectWebSocket,
   readPlayers,
+  onPlayersUpdate,
   updateChallengeDice,
   onChallengeDiceUpdate,
+  readChallengeDice,
   updatePlayer,
 } from './api';
 
@@ -51,11 +52,28 @@ const GamePage = () => {
     impactDiceSlots: any[];
   };
 
+  type BackendPlayer = {
+    playerId: number;
+    sessionCode: number;
+    playerNumber?: number;
+    name?: string;
+    character?: string;
+    escapePod?: string;
+    location?: string;
+    skillTokens?: SkillToken[];
+    turn?: boolean;
+    journalText?: string;
+    statuses?: Statuses;
+    impactDiceSlots?: any[];
+  };
+
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const challengeDiceInitialized = useRef(false);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -91,92 +109,106 @@ const GamePage = () => {
   }, [isMyTurn]);
 
   useEffect(() => {
-    let isMounted = true;
-    let diceHandler: ((newDice: number) => void) | null = null;
-
     const initWebSocket = async () => {
       try {
         // 1️⃣ Connect WS
         await connectWebSocket();
         console.log('WebSocket connected');
 
-        // 2️⃣ Handle challengeDice updates
-        diceHandler = (newDice: number) => {
-          if (!isMounted) return;
+        // 2️⃣ Set up listeners
+        onChallengeDiceUpdate(newDice => {
           if (isMyTurnRef.current) return; // ignore updates if it's my turn
           setChallengeDice(newDice);
-        };
-        onChallengeDiceUpdate(diceHandler);
-
-        // 3️⃣ Handle player updates
-        readPlayers(sessionCode, playersFromBackend => {
-          if (!isMounted) return;
-
-          const getSanitizedArray = (data: any, defaultData: any[]) => {
-            if (Array.isArray(data)) {
-              return data;
-            }
-            if (typeof data === 'object' && data !== null) {
-              return Object.values(data);
-            }
-            return defaultData;
-          };
-
-          const transformedBackendPlayers = playersFromBackend.map(p => ({
-            id: p.playerId,
-            sessionCode: p.sessionCode,
-            playerNumber: Number(p.playerNumber) || 0,
-            name: p.name || '',
-            character: p.character || '',
-            escapePod: p.escapePod || '',
-            location: p.location || '',
-            skillTokens: getSanitizedArray(p.skillTokens, [
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-            ]),
-            turn: p.turn || false,
-            journalText: p.journalText || '',
-            statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
-            impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
-          }));
-
-          setPlayerInfo(prevPlayerInfo => {
-            let finalPlayers;
-            if (prevPlayerInfo.length === 0) {
-              finalPlayers = transformedBackendPlayers;
-              if (isMounted) {
-                setLoading(false);
-              }
-            } else {
-              const myPlayerFromLocalState = prevPlayerInfo.find(
-                p => p.id === playerId,
-              );
-              const myPlayerFromBackend = transformedBackendPlayers.find(
-                p => p.id === playerId,
-              );
-
-              let mergedMyPlayer = myPlayerFromLocalState;
-
-              if (myPlayerFromLocalState && myPlayerFromBackend) {
-                mergedMyPlayer = {
-                  ...myPlayerFromLocalState,
-                  turn: myPlayerFromBackend.turn,
-                };
-              }
-
-              finalPlayers = transformedBackendPlayers.map(backendPlayer =>
-                backendPlayer.id === playerId && mergedMyPlayer
-                  ? mergedMyPlayer
-                  : backendPlayer,
-              );
-            }
-            return rotatePlayers(finalPlayers, playerId);
-          });
         });
+
+        onPlayersUpdate(
+          (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
+            const getSanitizedArray = (data: any, defaultData: any[]) => {
+              if (Array.isArray(data)) return data;
+              if (typeof data === 'object' && data !== null)
+                return Object.values(data);
+              return defaultData;
+            };
+
+            const playersFromBackend = gameData.players;
+
+            // Only set initial challengeDice once
+            if (!challengeDiceInitialized.current) {
+              setChallengeDice(gameData.challengeDice);
+              challengeDiceInitialized.current = true;
+            }
+
+            const transformedBackendPlayers = playersFromBackend.map(
+              (p: any) => ({
+                id: p.playerId,
+                sessionCode: p.sessionCode,
+                playerNumber: Number(p.playerNumber) || 0,
+                name: p.name || '',
+                character: p.character || '',
+                escapePod: p.escapePod || '',
+                location: p.location || '',
+                skillTokens: getSanitizedArray(p.skillTokens, [
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                ]),
+                turn: p.turn || false,
+                journalText: p.journalText || '',
+                statuses: p.statuses || {
+                  heart: 0,
+                  star: 0,
+                  'timer-sand-full': 0,
+                },
+                impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
+              }),
+            );
+
+            setPlayerInfo(prevPlayerInfo => {
+              if (prevPlayerInfo.length === 0) {
+                setLoading(false);
+                return rotatePlayers(transformedBackendPlayers, playerId);
+              }
+
+              // Create a map of the new players for easy lookup
+              const backendPlayersMap = new Map(
+                transformedBackendPlayers.map((p: any) => [p.id, p]),
+              );
+
+              // Merge the two lists
+              const mergedPlayers = prevPlayerInfo.map(localPlayer => {
+                const backendPlayer = backendPlayersMap.get(localPlayer.id);
+                if (backendPlayer) {
+                  // If it's the current user's player, merge carefully
+                  if (localPlayer.id === playerId) {
+                    return {
+                      ...localPlayer, // Keep local changes
+                      turn: backendPlayer.turn, // But always update turn status
+                    };
+                  }
+                  // For other players, just use the backend data
+                  return backendPlayer;
+                }
+                return localPlayer;
+              });
+
+              // Add any new players from the backend
+              transformedBackendPlayers.forEach((backendPlayer: any) => {
+                if (!prevPlayerInfo.some(p => p.id === backendPlayer.id)) {
+                  mergedPlayers.push(backendPlayer);
+                }
+              });
+
+              return rotatePlayers(mergedPlayers, playerId);
+            });
+          },
+        );
+
+        // 3️⃣ Initial data fetch
+        readPlayers(sessionCode);
+        readChallengeDice(sessionCode);
       } catch (err) {
         console.error('WebSocket connection failed:', err);
         setLoading(false);
@@ -184,20 +216,19 @@ const GamePage = () => {
     };
 
     initWebSocket();
-
-    return () => {
-      // cleanup
-      isMounted = false;
-      if (diceHandler) wsClient.off(diceHandler);
-    };
   }, [playerId, sessionCode]);
 
   useEffect(() => {
     // Keep viewedPlayer in sync with playerInfo, and set initial viewed player
     if (playerInfo.length > 0) {
       if (viewedPlayer) {
-        const updatedViewedPlayer = playerInfo.find(p => p.id === viewedPlayer.id);
-        if (updatedViewedPlayer && !isEqual(updatedViewedPlayer, viewedPlayer)) {
+        const updatedViewedPlayer = playerInfo.find(
+          p => p.id === viewedPlayer.id,
+        );
+        if (
+          updatedViewedPlayer &&
+          !isEqual(updatedViewedPlayer, viewedPlayer)
+        ) {
           setViewedPlayer(updatedViewedPlayer);
         }
       } else {
