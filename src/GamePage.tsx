@@ -52,11 +52,28 @@ const GamePage = () => {
     impactDiceSlots: any[];
   };
 
+  type BackendPlayer = {
+    playerId: number;
+    sessionCode: number;
+    playerNumber?: number;
+    name?: string;
+    character?: string;
+    escapePod?: string;
+    location?: string;
+    skillTokens?: SkillToken[];
+    turn?: boolean;
+    journalText?: string;
+    statuses?: Statuses;
+    impactDiceSlots?: any[];
+  };
+
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const challengeDiceInitialized = useRef(false);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -104,74 +121,90 @@ const GamePage = () => {
           setChallengeDice(newDice);
         });
 
-        onPlayersUpdate(playersFromBackend => {
-          const getSanitizedArray = (data: any, defaultData: any[]) => {
-            if (Array.isArray(data)) return data;
-            if (typeof data === 'object' && data !== null)
-              return Object.values(data);
-            return defaultData;
-          };
+        onPlayersUpdate(
+          (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
+            const getSanitizedArray = (data: any, defaultData: any[]) => {
+              if (Array.isArray(data)) return data;
+              if (typeof data === 'object' && data !== null)
+                return Object.values(data);
+              return defaultData;
+            };
 
-          const transformedBackendPlayers = playersFromBackend.map(p => ({
-            id: p.playerId,
-            sessionCode: p.sessionCode,
-            playerNumber: Number(p.playerNumber) || 0,
-            name: p.name || '',
-            character: p.character || '',
-            escapePod: p.escapePod || '',
-            location: p.location || '',
-            skillTokens: getSanitizedArray(p.skillTokens, [
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-              { quantity: 0 },
-            ]),
-            turn: p.turn || false,
-            journalText: p.journalText || '',
-            statuses: p.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 },
-            impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
-          }));
+            const playersFromBackend = gameData.players;
 
-          setPlayerInfo(prevPlayerInfo => {
-            if (prevPlayerInfo.length === 0) {
-              setLoading(false);
-              return rotatePlayers(transformedBackendPlayers, playerId);
+            // Only set initial challengeDice once
+            if (!challengeDiceInitialized.current) {
+              setChallengeDice(gameData.challengeDice);
+              challengeDiceInitialized.current = true;
             }
 
-            // Create a map of the new players for easy lookup
-            const backendPlayersMap = new Map(
-              transformedBackendPlayers.map(p => [p.id, p]),
+            const transformedBackendPlayers = playersFromBackend.map(
+              (p: any) => ({
+                id: p.playerId,
+                sessionCode: p.sessionCode,
+                playerNumber: Number(p.playerNumber) || 0,
+                name: p.name || '',
+                character: p.character || '',
+                escapePod: p.escapePod || '',
+                location: p.location || '',
+                skillTokens: getSanitizedArray(p.skillTokens, [
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                  { quantity: 0 },
+                ]),
+                turn: p.turn || false,
+                journalText: p.journalText || '',
+                statuses: p.statuses || {
+                  heart: 0,
+                  star: 0,
+                  'timer-sand-full': 0,
+                },
+                impactDiceSlots: getSanitizedArray(p.impactDiceSlots, []),
+              }),
             );
 
-            // Merge the two lists
-            const mergedPlayers = prevPlayerInfo.map(localPlayer => {
-              const backendPlayer = backendPlayersMap.get(localPlayer.id);
-              if (backendPlayer) {
-                // If it's the current user's player, merge carefully
-                if (localPlayer.id === playerId) {
-                  return {
-                    ...localPlayer, // Keep local changes
-                    turn: backendPlayer.turn, // But always update turn status
-                  };
+            setPlayerInfo(prevPlayerInfo => {
+              if (prevPlayerInfo.length === 0) {
+                setLoading(false);
+                return rotatePlayers(transformedBackendPlayers, playerId);
+              }
+
+              // Create a map of the new players for easy lookup
+              const backendPlayersMap = new Map(
+                transformedBackendPlayers.map((p: any) => [p.id, p]),
+              );
+
+              // Merge the two lists
+              const mergedPlayers = prevPlayerInfo.map(localPlayer => {
+                const backendPlayer = backendPlayersMap.get(localPlayer.id);
+                if (backendPlayer) {
+                  // If it's the current user's player, merge carefully
+                  if (localPlayer.id === playerId) {
+                    return {
+                      ...localPlayer, // Keep local changes
+                      turn: backendPlayer.turn, // But always update turn status
+                    };
+                  }
+                  // For other players, just use the backend data
+                  return backendPlayer;
                 }
-                // For other players, just use the backend data
-                return backendPlayer;
-              }
-              return localPlayer;
-            });
+                return localPlayer;
+              });
 
-            // Add any new players from the backend
-            transformedBackendPlayers.forEach(backendPlayer => {
-              if (!prevPlayerInfo.some(p => p.id === backendPlayer.id)) {
-                mergedPlayers.push(backendPlayer);
-              }
-            });
+              // Add any new players from the backend
+              transformedBackendPlayers.forEach((backendPlayer: any) => {
+                if (!prevPlayerInfo.some(p => p.id === backendPlayer.id)) {
+                  mergedPlayers.push(backendPlayer);
+                }
+              });
 
-            return rotatePlayers(mergedPlayers, playerId);
-          });
-        });
+              return rotatePlayers(mergedPlayers, playerId);
+            });
+          },
+        );
 
         // 3️⃣ Initial data fetch
         readPlayers(sessionCode);
@@ -189,8 +222,13 @@ const GamePage = () => {
     // Keep viewedPlayer in sync with playerInfo, and set initial viewed player
     if (playerInfo.length > 0) {
       if (viewedPlayer) {
-        const updatedViewedPlayer = playerInfo.find(p => p.id === viewedPlayer.id);
-        if (updatedViewedPlayer && !isEqual(updatedViewedPlayer, viewedPlayer)) {
+        const updatedViewedPlayer = playerInfo.find(
+          p => p.id === viewedPlayer.id,
+        );
+        if (
+          updatedViewedPlayer &&
+          !isEqual(updatedViewedPlayer, viewedPlayer)
+        ) {
           setViewedPlayer(updatedViewedPlayer);
         }
       } else {

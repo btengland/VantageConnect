@@ -48,11 +48,9 @@ export const readPlayers = (sessionCode: number) => {
   wsClient.sendMessage({ action: 'readPlayers', sessionCode });
 };
 
-export const onPlayersUpdate = (callback: (players: any[]) => void) => {
+export const onPlayersUpdate = (callback: (data: any) => void) => {
   on('updatePlayers', data => {
-    if (data.players) {
-      callback(data.players);
-    }
+    callback(data); // send the whole object { players, challengeDice, code }
   });
 };
 
