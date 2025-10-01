@@ -315,38 +315,42 @@ function PlayerCard({
                         </View>
                       </View>
                       <View style={styles.counterContainer}>
-                        <Pressable
-                          style={styles.tokenButton}
-                          onPress={() => {
-                            if (!isEditable) return;
-                            const newTokens = [...player.skillTokens];
-                            newTokens[index].quantity = Math.max(
-                              0,
-                              token.quantity - 1,
-                            );
-                            updatePlayer({ skillTokens: newTokens });
-                          }}
-                        >
-                          <CustomText style={styles.tokenButtonText}>
-                            -
-                          </CustomText>
-                        </Pressable>
+                        {isEditable && (
+                          <Pressable
+                            style={styles.tokenButton}
+                            onPress={() => {
+                              if (!isEditable) return;
+                              const newTokens = [...player.skillTokens];
+                              newTokens[index].quantity = Math.max(
+                                0,
+                                token.quantity - 1,
+                              );
+                              updatePlayer({ skillTokens: newTokens });
+                            }}
+                          >
+                            <CustomText style={styles.tokenButtonText}>
+                              -
+                            </CustomText>
+                          </Pressable>
+                        )}
                         <CustomText style={styles.tokenQuantity}>
                           {token.quantity}
                         </CustomText>
-                        <Pressable
-                          style={styles.tokenButton}
-                          onPress={() => {
-                            if (!isEditable) return;
-                            const newTokens = [...player.skillTokens];
-                            newTokens[index].quantity += 1;
-                            updatePlayer({ skillTokens: newTokens });
-                          }}
-                        >
-                          <CustomText style={styles.tokenButtonText}>
-                            +
-                          </CustomText>
-                        </Pressable>
+                        {isEditable && (
+                          <Pressable
+                            style={styles.tokenButton}
+                            onPress={() => {
+                              if (!isEditable) return;
+                              const newTokens = [...player.skillTokens];
+                              newTokens[index].quantity += 1;
+                              updatePlayer({ skillTokens: newTokens });
+                            }}
+                          >
+                            <CustomText style={styles.tokenButtonText}>
+                              +
+                            </CustomText>
+                          </Pressable>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -384,6 +388,7 @@ function PlayerCard({
                   </Pressable>
                   <View style={styles.pickerWrapperImpact}>
                     <IconPicker
+                      disabled={!isEditable}
                       options={IMPACT_SYMBOLS}
                       selectedValue={slot.symbol}
                       onValueChange={value =>
@@ -395,15 +400,19 @@ function PlayerCard({
                       }
                     />
                   </View>
-                  <Pressable
-                    onPress={() => isEditable && handleRemoveImpactSlot(index)}
-                  >
-                    <MaterialCommunityIcons
-                      name="delete"
-                      size={24}
-                      color="red"
-                    />
-                  </Pressable>
+                  {isEditable && (
+                    <Pressable
+                      onPress={() =>
+                        isEditable && handleRemoveImpactSlot(index)
+                      }
+                    >
+                      <MaterialCommunityIcons
+                        name="delete"
+                        size={24}
+                        color="red"
+                      />
+                    </Pressable>
+                  )}
                 </View>
               ))}
             </View>
@@ -457,15 +466,17 @@ function PlayerCard({
                     ))}
                   </View>
                   <View style={styles.statusControls}>
-                    <Pressable
-                      onPress={() => handleStatusChange(status as any, -1)}
-                    >
-                      <MaterialCommunityIcons
-                        name="minus"
-                        size={30}
-                        color="black"
-                      />
-                    </Pressable>
+                    {isEditable && (
+                      <Pressable
+                        onPress={() => handleStatusChange(status as any, -1)}
+                      >
+                        <MaterialCommunityIcons
+                          name="minus"
+                          size={30}
+                          color="black"
+                        />
+                      </Pressable>
+                    )}
                     <CustomText style={styles.statusLevel}>
                       {
                         player.statuses[
@@ -473,15 +484,17 @@ function PlayerCard({
                         ]
                       }
                     </CustomText>
-                    <Pressable
-                      onPress={() => handleStatusChange(status as any, 1)}
-                    >
-                      <MaterialCommunityIcons
-                        name="plus"
-                        size={30}
-                        color="black"
-                      />
-                    </Pressable>
+                    {isEditable && (
+                      <Pressable
+                        onPress={() => handleStatusChange(status as any, 1)}
+                      >
+                        <MaterialCommunityIcons
+                          name="plus"
+                          size={30}
+                          color="black"
+                        />
+                      </Pressable>
+                    )}
                   </View>
                 </View>
               ))}

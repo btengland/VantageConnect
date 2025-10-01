@@ -17,12 +17,14 @@ type Option = {
 };
 
 type IconPickerProps = {
+  disabled: boolean;
   options: Option[];
   selectedValue: string;
   onValueChange: (value: string) => void;
 };
 
 const IconPicker = ({
+  disabled,
   options,
   selectedValue,
   onValueChange,
@@ -33,7 +35,11 @@ const IconPicker = ({
 
   return (
     <>
-      <Pressable style={styles.picker} onPress={() => setModalVisible(true)}>
+      <Pressable
+        disabled={disabled}
+        style={styles.picker}
+        onPress={() => setModalVisible(true)}
+      >
         {selectedOption?.value === 'any' ? (
           <Text style={styles.pickerText}>{selectedOption?.label}</Text>
         ) : (
