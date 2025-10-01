@@ -10,6 +10,7 @@ import CustomText from './components/CustomText';
 import { getCharacterColor } from './utils';
 import {
   connectWebSocket,
+  disconnectWebSocket,
   readPlayers,
   onPlayersUpdate,
   updateChallengeDice,
@@ -216,6 +217,10 @@ const GamePage = () => {
     };
 
     initWebSocket();
+
+    return () => {
+      disconnectWebSocket();
+    };
   }, [playerId, sessionCode]);
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import React from 'react';
 export const lightenColor = (hex: string, percent: number) => {
   // Remove hash if present
   hex = hex.replace(/^#/, '');
@@ -47,4 +48,20 @@ export const getCharacterColor = (characterText: string): string => {
     }
   }
   return 'darkgray';
+};
+
+export const useDebounce = (value: any, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = React.useState(value);
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 };

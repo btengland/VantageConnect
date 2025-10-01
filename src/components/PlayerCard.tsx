@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,11 +18,13 @@ import CustomText from './CustomText';
 import IconPicker from './IconPicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
-import { getOrdinal, lightenColor } from '../utils';
+import { getOrdinal, lightenColor, useDebounce } from '../utils';
 import { endTurn } from '../api';
 
+// TYPE DEFINITIONS
 type SkillToken = { quantity: number };
 type ImpactDiceSlot = { symbol: string; checked: boolean };
+type Status = 'heart' | 'star' | 'timer-sand-full';
 type Player = {
   id: number;
   sessionCode: number;
@@ -34,7 +36,7 @@ type Player = {
   skillTokens: SkillToken[];
   turn: boolean;
   journalText: string;
-  statuses: { heart: number; star: number; 'timer-sand-full': number };
+  statuses: { [key in Status]: number };
   impactDiceSlots: ImpactDiceSlot[];
 };
 
@@ -46,23 +48,45 @@ type PlayerCardProps = {
   onUpdatePlayer: (player: Player) => void;
 };
 
-function PlayerCard({
+const PlayerCard: React.FC<PlayerCardProps> = ({
   currentPlayerId,
   player,
   getCharacterColor,
   skillTokenIcons,
   onUpdatePlayer,
-}: PlayerCardProps) {
-  const [localPlayer, setLocalPlayer] = useState(player);
-  const [isLoading, setIsLoading] = useState(false);
+}) => {
+  const [localPlayer, setLocalPlayer] = useState<Player>(player);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
 
-  // Sync local state when parent player updates
-  useEffect(() => {
-    setLocalPlayer(player);
-  }, [player]);
+  const debouncedPlayer = useDebounce(localPlayer, 500);
 
+  useEffect(() => {
+    onUpdatePlayer(debouncedPlayer);
+  }, [debouncedPlayer]);
+
+  // Sync with incoming player data
+  useEffect(() => {
+    // If this card is not for the currently editing player, always sync from props.
+    if (player.id !== currentPlayerId) {
+      setLocalPlayer(player);
+    } else {
+      // This is the currently editing player.
+      // We don't want to overwrite their input, so we only sync the 'turn' status.
+      if (player.turn !== localPlayer.turn) {
+        setLocalPlayer(prev => ({ ...prev, turn: player.turn }));
+
+        // When the turn is over (i.e., player.turn becomes false),
+        // we must reset the loading state of the "Done" button.
+        if (!player.turn) {
+          setIsLoading(false);
+        }
+      }
+    }
+  }, [player, currentPlayerId, localPlayer.turn]);
+
+  // Pulse animation for the location input
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -82,57 +106,77 @@ function PlayerCard({
     ).start();
   }, [pulseAnim]);
 
-  const updatePlayer = (updates: Partial<Player>) => {
-    const updated = { ...localPlayer, ...updates };
-    setLocalPlayer(updated);
-    onUpdatePlayer(updated);
-  };
+  // Generic update handler
+  const updatePlayer = useCallback(
+    (updates: Partial<Player>) => {
+      if (!isEditable) return;
+      setLocalPlayer(prev => ({ ...prev, ...updates }));
+    },
+    [isEditable],
+  );
 
-  const handleAddImpactSlot = () => {
-    if (!isEditable) return;
+  // Handlers for specific actions
+  const handleAddImpactSlot = useCallback(() => {
     updatePlayer({
       impactDiceSlots: [
         ...localPlayer.impactDiceSlots,
         { symbol: 'any', checked: false },
       ],
     });
-  };
+  }, [localPlayer.impactDiceSlots, updatePlayer]);
 
-  const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
-    if (!isEditable) return;
-    const slots = [...localPlayer.impactDiceSlots];
-    slots[index] = newSlot;
-    updatePlayer({ impactDiceSlots: slots });
-  };
+  const handleUpdateImpactSlot = useCallback(
+    (index: number, newSlot: ImpactDiceSlot) => {
+      const slots = [...localPlayer.impactDiceSlots];
+      slots[index] = newSlot;
+      updatePlayer({ impactDiceSlots: slots });
+    },
+    [localPlayer.impactDiceSlots, updatePlayer],
+  );
 
-  const handleRemoveImpactSlot = (index: number) => {
-    if (!isEditable) return;
-    const slots = localPlayer.impactDiceSlots.filter((_, i) => i !== index);
-    updatePlayer({ impactDiceSlots: slots });
-  };
+  const handleRemoveImpactSlot = useCallback(
+    (index: number) => {
+      const slots = localPlayer.impactDiceSlots.filter((_, i) => i !== index);
+      updatePlayer({ impactDiceSlots: slots });
+    },
+    [localPlayer.impactDiceSlots, updatePlayer],
+  );
 
-  const handleStatusChange = (
-    status: 'heart' | 'star' | 'timer-sand-full',
-    change: 1 | -1,
-  ) => {
-    if (!isEditable) return;
-    const currentLevel = localPlayer.statuses[status];
-    const newLevel = Math.max(0, Math.min(6, currentLevel + change));
-    updatePlayer({ statuses: { ...localPlayer.statuses, [status]: newLevel } });
-  };
+  const handleStatusChange = useCallback(
+    (status: Status, change: 1 | -1) => {
+      const currentLevel = localPlayer.statuses[status];
+      const newLevel = Math.max(0, Math.min(6, currentLevel + change));
+      updatePlayer({
+        statuses: { ...localPlayer.statuses, [status]: newLevel },
+      });
+    },
+    [localPlayer.statuses, updatePlayer],
+  );
+
+  const handleSkillTokenChange = useCallback(
+    (index: number, change: 1 | -1) => {
+      const newTokens = [...localPlayer.skillTokens];
+      newTokens[index].quantity = Math.max(
+        0,
+        newTokens[index].quantity + change,
+      );
+      updatePlayer({ skillTokens: newTokens });
+    },
+    [localPlayer.skillTokens, updatePlayer],
+  );
 
   const handleEndTurn = async () => {
     if (!isEditable) return;
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       await endTurn(localPlayer.sessionCode, localPlayer.id);
     } catch (err) {
       console.error('End turn failed', err);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // only set loading false on error
     }
   };
 
+  // RENDER HELPERS
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
@@ -166,13 +210,14 @@ function PlayerCard({
                 disabled={isLoading}
                 onPress={handleEndTurn}
                 style={({ pressed }) => [
+                  SharedStyles.button,
                   { opacity: pressed || isLoading ? 0.5 : 1 },
                 ]}
               >
                 {isLoading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <CustomText style={SharedStyles.button} small bold>
+                  <CustomText style={SharedStyles.buttonLabel} small bold>
                     Done
                   </CustomText>
                 )}
@@ -209,14 +254,11 @@ function PlayerCard({
                 enabled={isEditable}
                 onValueChange={value => updatePlayer({ character: value })}
               >
-                {/* First option disabled */}
                 <Picker.Item
                   label="Select a character..."
                   value=""
                   enabled={false}
                 />
-
-                {/* Rest of the options */}
                 {CHARACTERS.map(c => (
                   <Picker.Item key={c} label={c} value={c} />
                 ))}
@@ -305,15 +347,8 @@ function PlayerCard({
                       <View style={styles.counterContainer}>
                         <Pressable
                           style={styles.tokenButton}
-                          onPress={() => {
-                            if (!isEditable) return;
-                            const newTokens = [...localPlayer.skillTokens];
-                            newTokens[index].quantity = Math.max(
-                              0,
-                              token.quantity - 1,
-                            );
-                            updatePlayer({ skillTokens: newTokens });
-                          }}
+                          onPress={() => handleSkillTokenChange(index, -1)}
+                          disabled={!isEditable}
                         >
                           <CustomText style={styles.tokenButtonText}>
                             -
@@ -324,12 +359,8 @@ function PlayerCard({
                         </CustomText>
                         <Pressable
                           style={styles.tokenButton}
-                          onPress={() => {
-                            if (!isEditable) return;
-                            const newTokens = [...localPlayer.skillTokens];
-                            newTokens[index].quantity += 1;
-                            updatePlayer({ skillTokens: newTokens });
-                          }}
+                          onPress={() => handleSkillTokenChange(index, 1)}
+                          disabled={!isEditable}
                         >
                           <CustomText style={styles.tokenButtonText}>
                             +
@@ -353,12 +384,12 @@ function PlayerCard({
                 <View key={index} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
-                      isEditable &&
                       handleUpdateImpactSlot(index, {
                         ...slot,
                         checked: !slot.checked,
                       })
                     }
+                    disabled={!isEditable}
                   >
                     <MaterialCommunityIcons
                       name={
@@ -375,16 +406,17 @@ function PlayerCard({
                       options={IMPACT_SYMBOLS}
                       selectedValue={slot.symbol}
                       onValueChange={value =>
-                        isEditable &&
                         handleUpdateImpactSlot(index, {
                           ...slot,
                           symbol: value,
                         })
                       }
+                      disabled={!isEditable}
                     />
                   </View>
                   <Pressable
-                    onPress={() => isEditable && handleRemoveImpactSlot(index)}
+                    onPress={() => handleRemoveImpactSlot(index)}
+                    disabled={!isEditable}
                   >
                     <MaterialCommunityIcons
                       name="delete"
@@ -409,7 +441,7 @@ function PlayerCard({
               Status Updates
             </CustomText>
             <View style={styles.statusContainer}>
-              {['heart', 'star', 'timer-sand-full'].map(status => (
+              {(Object.keys(localPlayer.statuses) as Status[]).map(status => (
                 <View key={status} style={styles.statusRow}>
                   <MaterialCommunityIcons
                     name={status as any}
@@ -420,23 +452,20 @@ function PlayerCard({
                     {[...Array(6)].map((_, i) => (
                       <Pressable
                         key={i}
-                        onPress={() => {
-                          if (!isEditable) return;
+                        onPress={() =>
                           updatePlayer({
                             statuses: {
                               ...localPlayer.statuses,
                               [status]: i + 1,
                             },
-                          });
-                        }}
+                          })
+                        }
+                        disabled={!isEditable}
                       >
                         <View
                           style={[
                             styles.statusDot,
-                            i <
-                            localPlayer.statuses[
-                              status as 'heart' | 'star' | 'timer-sand-full'
-                            ]
+                            i < localPlayer.statuses[status]
                               ? styles.statusDotFilled
                               : {},
                           ]}
@@ -446,7 +475,8 @@ function PlayerCard({
                   </View>
                   <View style={styles.statusControls}>
                     <Pressable
-                      onPress={() => handleStatusChange(status as any, -1)}
+                      onPress={() => handleStatusChange(status, -1)}
+                      disabled={!isEditable}
                     >
                       <MaterialCommunityIcons
                         name="minus"
@@ -455,14 +485,11 @@ function PlayerCard({
                       />
                     </Pressable>
                     <CustomText style={styles.statusLevel}>
-                      {
-                        localPlayer.statuses[
-                          status as 'heart' | 'star' | 'timer-sand-full'
-                        ]
-                      }
+                      {localPlayer.statuses[status]}
                     </CustomText>
                     <Pressable
-                      onPress={() => handleStatusChange(status as any, 1)}
+                      onPress={() => handleStatusChange(status, 1)}
+                      disabled={!isEditable}
                     >
                       <MaterialCommunityIcons
                         name="plus"
@@ -494,7 +521,7 @@ function PlayerCard({
       </View>
     </KeyboardAvoidingView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   cardContainer: {
