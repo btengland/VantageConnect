@@ -44,6 +44,7 @@ type PlayerCardProps = {
   getCharacterColor: (characterText: string) => string;
   skillTokenIcons: any[];
   onUpdatePlayer: (player: Player) => void;
+  totalPlayers: number;
 };
 
 function PlayerCard({
@@ -52,6 +53,7 @@ function PlayerCard({
   getCharacterColor,
   skillTokenIcons,
   onUpdatePlayer,
+  totalPlayers,
 }: PlayerCardProps) {
   const [localPlayer, setLocalPlayer] = useState(player);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,13 +124,19 @@ function PlayerCard({
   };
 
   const handleEndTurn = async () => {
-    if (!isEditable) return;
+    // Prevent multiple clicks
+    if (!isEditable || isLoading) return;
+
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // This call informs the backend. The UI update will come via WebSocket.
       await endTurn(localPlayer.sessionCode, localPlayer.id);
+      // We DON'T set isLoading to false here. The button will disappear
+      // when the player's `turn` status is updated via WebSocket,
+      // which is the source of truth.
     } catch (err) {
       console.error('End turn failed', err);
-    } finally {
+      // If the API call fails, re-enable the button for another attempt.
       setIsLoading(false);
     }
   };
@@ -163,16 +171,23 @@ function PlayerCard({
               </View>
 
               <Pressable
-                disabled={isLoading}
+                disabled={isLoading || totalPlayers <= 1}
                 onPress={handleEndTurn}
                 style={({ pressed }) => [
-                  { opacity: pressed || isLoading ? 0.5 : 1 },
+                  {
+                    opacity:
+                      pressed || isLoading || totalPlayers <= 1 ? 0.5 : 1,
+                  },
                 ]}
               >
                 {isLoading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <CustomText style={SharedStyles.button} small bold>
+                  <CustomText
+                    style={totalPlayers > 1 && SharedStyles.button}
+                    small
+                    bold
+                  >
                     Done
                   </CustomText>
                 )}

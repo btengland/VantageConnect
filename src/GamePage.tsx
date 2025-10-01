@@ -358,6 +358,7 @@ const GamePage = () => {
               getCharacterColor={getCharacterColor}
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}
+              totalPlayers={playerInfo.length}
             />
           )}
         </View>
