@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { isEqual } from 'lodash';
 import {
   View,
   StyleSheet,
@@ -58,10 +59,27 @@ function PlayerCard({
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
 
-  // Sync local state when parent player updates
+  // Sync local state when parent player updates, but be careful not to overwrite
+  // the user's input if they are currently editing.
   useEffect(() => {
-    setLocalPlayer(player);
-  }, [player]);
+    // If this card is not the one being edited, always accept the parent state.
+    if (!isEditable) {
+      // Avoid unnecessary re-renders if the data is the same
+      if (!isEqual(player, localPlayer)) {
+        setLocalPlayer(player);
+      }
+      return;
+    }
+
+    // If it *is* the one being edited, we only want to accept the 'turn' status
+    // from the parent, as other data might be stale.
+    if (player.turn !== localPlayer.turn) {
+      setLocalPlayer(prev => ({
+        ...prev,
+        turn: player.turn,
+      }));
+    }
+  }, [player, isEditable]);
 
   useEffect(() => {
     Animated.loop(
@@ -122,13 +140,19 @@ function PlayerCard({
   };
 
   const handleEndTurn = async () => {
-    if (!isEditable) return;
+    // Prevent multiple clicks
+    if (!isEditable || isLoading) return;
+
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // This call informs the backend. The UI update will come via WebSocket.
       await endTurn(localPlayer.sessionCode, localPlayer.id);
+      // We DON'T set isLoading to false here. The button will disappear
+      // when the player's `turn` status is updated via WebSocket,
+      // which is the source of truth.
     } catch (err) {
       console.error('End turn failed', err);
-    } finally {
+      // If the API call fails, re-enable the button for another attempt.
       setIsLoading(false);
     }
   };
