@@ -99,12 +99,23 @@ const GamePage = () => {
     }, 300), // 300ms delay
   ).current;
 
-  const handleUpdatePlayer = useCallback((updatedPlayer: Player) => {
+  const handleUpdatePlayer = useCallback((updates: Partial<Player>) => {
+    let fullPlayer: Player | undefined;
     setPlayerInfoWithRef(prev =>
-      prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
+      prev.map(p => {
+        if (p.id === playerId) {
+          const updatedPlayer = { ...p, ...updates };
+          fullPlayer = updatedPlayer;
+          return updatedPlayer;
+        }
+        return p;
+      }),
     );
-    debouncedUpdatePlayer(updatedPlayer);
-  }, [setPlayerInfoWithRef, debouncedUpdatePlayer]);
+
+    if (fullPlayer) {
+      debouncedUpdatePlayer(fullPlayer);
+    }
+  }, [playerId, setPlayerInfoWithRef, debouncedUpdatePlayer]);
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
     const index = players.findIndex(p => p.id === currentPlayerId);
