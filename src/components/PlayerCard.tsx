@@ -123,6 +123,11 @@ function PlayerCard({
     updatePlayer({ statuses: { ...localPlayer.statuses, [status]: newLevel } });
   };
 
+  // Reset loading when it becomes this player's turn again
+  useEffect(() => {
+    setIsLoading(false);
+  }, [localPlayer.turn, currentPlayerId, localPlayer.id]);
+
   const handleEndTurn = async () => {
     // Prevent multiple clicks
     if (!isEditable || isLoading) return;
