@@ -320,10 +320,17 @@ function PlayerCard({
                             style={styles.tokenButton}
                             onPress={() => {
                               if (!isEditable) return;
-                              const newTokens = [...player.skillTokens];
-                              newTokens[index].quantity = Math.max(
-                                0,
-                                token.quantity - 1,
+                              const newTokens = player.skillTokens.map(
+                                (token, i) =>
+                                  i === index
+                                    ? {
+                                        ...token,
+                                        quantity: Math.max(
+                                          0,
+                                          token.quantity - 1,
+                                        ),
+                                      }
+                                    : token,
                               );
                               updatePlayer({ skillTokens: newTokens });
                             }}
@@ -341,8 +348,12 @@ function PlayerCard({
                             style={styles.tokenButton}
                             onPress={() => {
                               if (!isEditable) return;
-                              const newTokens = [...player.skillTokens];
-                              newTokens[index].quantity += 1;
+                              const newTokens = player.skillTokens.map(
+                                (token, i) =>
+                                  i === index
+                                    ? { ...token, quantity: token.quantity + 1 }
+                                    : token,
+                              );
                               updatePlayer({ skillTokens: newTokens });
                             }}
                           >
