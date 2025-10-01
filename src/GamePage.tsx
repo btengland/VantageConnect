@@ -168,41 +168,34 @@ const GamePage = () => {
             );
 
             setPlayerInfo(prevPlayerInfo => {
-              if (prevPlayerInfo.length === 0) {
-                setLoading(false);
-                return rotatePlayers(transformedBackendPlayers, playerId);
-              }
-
-              // Create a map of the new players for easy lookup
-              const backendPlayersMap = new Map(
-                transformedBackendPlayers.map((p: any) => [p.id, p]),
+              // The backend player list is the source of truth for who is in the game.
+              // We map over it and merge with local data for the current user.
+              const localUserPlayerState = prevPlayerInfo.find(
+                p => p.id === playerId,
               );
 
-              // Merge the two lists
-              const mergedPlayers = prevPlayerInfo.map(localPlayer => {
-                const backendPlayer = backendPlayersMap.get(localPlayer.id);
-                if (backendPlayer) {
-                  // If it's the current user's player, merge carefully
-                  if (localPlayer.id === playerId) {
+              const newPlayerInfo = transformedBackendPlayers.map(
+                backendPlayer => {
+                  // If it's the current user and we have their local state, merge them.
+                  if (backendPlayer.id === playerId && localUserPlayerState) {
+                    // Preserve local state to prevent overwriting user's input,
+                    // but always accept 'turn' status from the backend.
                     return {
-                      ...localPlayer, // Keep local changes
-                      turn: backendPlayer.turn, // But always update turn status
+                      ...localUserPlayerState,
+                      turn: backendPlayer.turn,
                     };
                   }
-                  // For other players, just use the backend data
+                  // For all other players, or if no local state exists for the current user,
+                  // the backend data is the authority.
                   return backendPlayer;
-                }
-                return localPlayer;
-              });
+                },
+              );
 
-              // Add any new players from the backend
-              transformedBackendPlayers.forEach((backendPlayer: any) => {
-                if (!prevPlayerInfo.some(p => p.id === backendPlayer.id)) {
-                  mergedPlayers.push(backendPlayer);
-                }
-              });
+              if (loading) {
+                setLoading(false);
+              }
 
-              return rotatePlayers(mergedPlayers, playerId);
+              return rotatePlayers(newPlayerInfo, playerId);
             });
           },
         );
