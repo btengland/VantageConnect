@@ -43,7 +43,7 @@ type PlayerCardProps = {
   player: Player;
   getCharacterColor: (characterText: string) => string;
   skillTokenIcons: any[];
-  onUpdatePlayer: (player: Player) => void;
+  onUpdatePlayer: (updates: Partial<Player>) => void;
   totalPlayers: number;
 };
 
@@ -55,15 +55,9 @@ function PlayerCard({
   onUpdatePlayer,
   totalPlayers,
 }: PlayerCardProps) {
-  const [localPlayer, setLocalPlayer] = useState(player);
   const [isLoading, setIsLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
-
-  // Sync local state when parent player updates
-  useEffect(() => {
-    setLocalPlayer(player);
-  }, [player]);
 
   useEffect(() => {
     Animated.loop(
@@ -85,16 +79,14 @@ function PlayerCard({
   }, [pulseAnim]);
 
   const updatePlayer = (updates: Partial<Player>) => {
-    const updated = { ...localPlayer, ...updates };
-    setLocalPlayer(updated);
-    onUpdatePlayer(updated);
+    onUpdatePlayer(updates);
   };
 
   const handleAddImpactSlot = () => {
     if (!isEditable) return;
     updatePlayer({
       impactDiceSlots: [
-        ...localPlayer.impactDiceSlots,
+        ...player.impactDiceSlots,
         { symbol: 'any', checked: false },
       ],
     });
@@ -102,14 +94,14 @@ function PlayerCard({
 
   const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
     if (!isEditable) return;
-    const slots = [...localPlayer.impactDiceSlots];
+    const slots = [...player.impactDiceSlots];
     slots[index] = newSlot;
     updatePlayer({ impactDiceSlots: slots });
   };
 
   const handleRemoveImpactSlot = (index: number) => {
     if (!isEditable) return;
-    const slots = localPlayer.impactDiceSlots.filter((_, i) => i !== index);
+    const slots = player.impactDiceSlots.filter((_, i) => i !== index);
     updatePlayer({ impactDiceSlots: slots });
   };
 
@@ -118,15 +110,15 @@ function PlayerCard({
     change: 1 | -1,
   ) => {
     if (!isEditable) return;
-    const currentLevel = localPlayer.statuses[status];
+    const currentLevel = player.statuses[status];
     const newLevel = Math.max(0, Math.min(6, currentLevel + change));
-    updatePlayer({ statuses: { ...localPlayer.statuses, [status]: newLevel } });
+    updatePlayer({ statuses: { ...player.statuses, [status]: newLevel } });
   };
 
   // Reset loading when it becomes this player's turn again
   useEffect(() => {
     setIsLoading(false);
-  }, [localPlayer.turn, currentPlayerId, localPlayer.id]);
+  }, [player.turn, currentPlayerId, player.id]);
 
   const handleEndTurn = async () => {
     // Prevent multiple clicks
@@ -135,7 +127,7 @@ function PlayerCard({
     setIsLoading(true);
     try {
       // This call informs the backend. The UI update will come via WebSocket.
-      await endTurn(localPlayer.sessionCode, localPlayer.id);
+      await endTurn(player.sessionCode, player.id);
       // We DON'T set isLoading to false here. The button will disappear
       // when the player's `turn` status is updated via WebSocket,
       // which is the source of truth.
@@ -149,7 +141,7 @@ function PlayerCard({
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
-  const lighterBg = lightenColor(getCharacterColor(localPlayer.character), 0.8);
+  const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
 
   return (
     <KeyboardAvoidingView
@@ -163,11 +155,11 @@ function PlayerCard({
         >
           {/* Header */}
           <CustomText style={styles.sectionHeader} small bold>
-            {getOrdinal(localPlayer.playerNumber)} Player
+            {getOrdinal(player.playerNumber)} Player
           </CustomText>
 
           {/* Current Turn */}
-          {localPlayer.turn && localPlayer.id === currentPlayerId && (
+          {player.turn && player.id === currentPlayerId && (
             <View style={styles.buttonContainer}>
               <View style={[styles.turnTextContainer, styles.myTurnBackground]}>
                 <CustomText style={styles.turnText} small bold>
@@ -207,7 +199,7 @@ function PlayerCard({
             </CustomText>
             <TextInput
               style={styles.value}
-              value={localPlayer.name}
+              value={player.name}
               placeholder="Enter your name"
               editable={isEditable}
               onChangeText={text => updatePlayer({ name: text })}
@@ -221,7 +213,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={localPlayer.character}
+                selectedValue={player.character}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
@@ -251,7 +243,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={localPlayer.escapePod}
+                selectedValue={player.escapePod}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
@@ -296,7 +288,7 @@ function PlayerCard({
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.locationInput, { color: lighterBg }]}
-                value={localPlayer.location}
+                value={player.location}
                 editable={isEditable}
                 onChangeText={text => updatePlayer({ location: text })}
               />
@@ -309,7 +301,7 @@ function PlayerCard({
               Skill Tokens
             </CustomText>
             <View style={styles.skillTokenGrid}>
-              {localPlayer.skillTokens.map((token, index) => (
+              {player.skillTokens.map((token, index) => (
                 <View key={index} style={styles.skillTokenBox}>
                   <View style={styles.iconBox}>
                     <View style={styles.tokenContent}>
@@ -327,7 +319,7 @@ function PlayerCard({
                           style={styles.tokenButton}
                           onPress={() => {
                             if (!isEditable) return;
-                            const newTokens = [...localPlayer.skillTokens];
+                            const newTokens = [...player.skillTokens];
                             newTokens[index].quantity = Math.max(
                               0,
                               token.quantity - 1,
@@ -346,7 +338,7 @@ function PlayerCard({
                           style={styles.tokenButton}
                           onPress={() => {
                             if (!isEditable) return;
-                            const newTokens = [...localPlayer.skillTokens];
+                            const newTokens = [...player.skillTokens];
                             newTokens[index].quantity += 1;
                             updatePlayer({ skillTokens: newTokens });
                           }}
@@ -369,7 +361,7 @@ function PlayerCard({
               Impact Dice Slots
             </CustomText>
             <View style={styles.impactGrid}>
-              {localPlayer.impactDiceSlots.map((slot, index) => (
+              {player.impactDiceSlots.map((slot, index) => (
                 <View key={index} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
@@ -444,7 +436,7 @@ function PlayerCard({
                           if (!isEditable) return;
                           updatePlayer({
                             statuses: {
-                              ...localPlayer.statuses,
+                              ...player.statuses,
                               [status]: i + 1,
                             },
                           });
@@ -454,7 +446,7 @@ function PlayerCard({
                           style={[
                             styles.statusDot,
                             i <
-                            localPlayer.statuses[
+                            player.statuses[
                               status as 'heart' | 'star' | 'timer-sand-full'
                             ]
                               ? styles.statusDotFilled
@@ -476,7 +468,7 @@ function PlayerCard({
                     </Pressable>
                     <CustomText style={styles.statusLevel}>
                       {
-                        localPlayer.statuses[
+                        player.statuses[
                           status as 'heart' | 'star' | 'timer-sand-full'
                         ]
                       }
@@ -504,7 +496,7 @@ function PlayerCard({
             <TextInput
               style={styles.journalInput}
               multiline
-              value={localPlayer.journalText}
+              value={player.journalText}
               placeholder="Write your notes here..."
               editable={isEditable}
               onChangeText={text => updatePlayer({ journalText: text })}
