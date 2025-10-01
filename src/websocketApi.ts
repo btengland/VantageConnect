@@ -116,7 +116,7 @@ export class GameWebSocket {
           console.warn('Heartbeat ping failed', err);
         }
       }
-    }, 3 * 60 * 1000); // every 5 minutes
+    }, 5 * 60 * 1000); // every 5 minutes
   }
 
   private stopHeartbeat() {

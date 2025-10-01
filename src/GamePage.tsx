@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { debounce, isEqual } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
@@ -18,22 +18,22 @@ import {
   updatePlayer,
 } from './api';
 
+// Define icons once here, outside the component
+const skillTokenIcons = [
+  require('./assets/Move.png'),
+  require('./assets/Look.png'),
+  require('./assets/Engage.png'),
+  require('./assets/Help.png'),
+  require('./assets/Take.png'),
+  require('./assets/Overpower.png'),
+];
+
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
     playerId: number;
     sessionCode: number;
   };
-
-  // Define icons once here
-  const skillTokenIcons = [
-    require('./assets/Move.png'),
-    require('./assets/Look.png'),
-    require('./assets/Engage.png'),
-    require('./assets/Help.png'),
-    require('./assets/Take.png'),
-    require('./assets/Overpower.png'),
-  ];
 
   type SkillToken = { quantity: number };
   type Statuses = { heart: number; star: number; 'timer-sand-full': number };
@@ -73,11 +73,11 @@ const GamePage = () => {
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const playerInfoRef = useRef(playerInfo);
 
-  const setPlayerInfoWithRef = (newState: Player[] | ((prevState: Player[]) => Player[])) => {
+  const setPlayerInfoWithRef = useCallback((newState: Player[] | ((prevState: Player[]) => Player[])) => {
     const newPlayerInfo = typeof newState === 'function' ? newState(playerInfoRef.current) : newState;
     playerInfoRef.current = newPlayerInfo;
     setPlayerInfo(newPlayerInfo);
-  };
+  }, []);
   const [loading, setLoading] = useState(true);
 
   const challengeDiceInitialized = useRef(false);
@@ -93,12 +93,18 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
-  const handleUpdatePlayer = (updatedPlayer: Player) => {
+  const debouncedUpdatePlayer = useRef(
+    debounce((player: Player) => {
+      updatePlayer(player);
+    }, 300), // 300ms delay
+  ).current;
+
+  const handleUpdatePlayer = useCallback((updatedPlayer: Player) => {
     setPlayerInfoWithRef(prev =>
       prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
     );
     debouncedUpdatePlayer(updatedPlayer);
-  };
+  }, [setPlayerInfoWithRef, debouncedUpdatePlayer]);
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
     const index = players.findIndex(p => p.id === currentPlayerId);
@@ -172,39 +178,52 @@ const GamePage = () => {
               },
             );
 
-            setPlayerInfoWithRef(() => {
-              const localPlayerInfo = playerInfoRef.current;
-              // On first load, just set the players
-              if (localPlayerInfo.length === 0) {
+            setPlayerInfoWithRef(prevPlayerInfo => {
+              if (prevPlayerInfo.length === 0) {
                 setLoading(false);
                 return rotatePlayers(transformedBackendPlayers, playerId);
               }
 
-              // Create a map of local players for quick lookup
-              const localPlayerMap = new Map(
-                localPlayerInfo.map((p: Player) => [p.id, p]),
+              const backendPlayersMap = new Map(
+                transformedBackendPlayers.map(p => [p.id, p]),
               );
 
-              const mergedPlayers = transformedBackendPlayers.map(
-                (backendPlayer: Player) => {
-                  const localPlayer = localPlayerMap.get(backendPlayer.id);
-
-                  // If it's the current user's player and we have a local version
-                  if (backendPlayer.id === playerId && localPlayer) {
-                    // Preserve the fields that the user might be actively editing
-                    return {
-                      ...backendPlayer, // Take all fresh data from the server
-                      name: localPlayer.name, // But keep the local name
-                      journalText: localPlayer.journalText, // And the local journal
-                    };
+              const mergedPlayers = prevPlayerInfo
+                .map(localPlayer => {
+                  const backendPlayer = backendPlayersMap.get(localPlayer.id);
+                  if (backendPlayer) {
+                    // This player exists in both lists.
+                    if (localPlayer.id === playerId) {
+                      // It's the current user. Preserve local state but take
+                      // authoritative updates from the server (like turn status).
+                      return {
+                        ...localPlayer,
+                        turn: backendPlayer.turn,
+                      };
+                    }
+                    // It's another player. Use the server's version.
+                    return backendPlayer;
                   }
+                  // This player is not in the backend list; they must have left.
+                  return null;
+                })
+                .filter((p): p is Player => p !== null);
 
-                  // For all other players, the backend is the source of truth
-                  return backendPlayer;
-                },
-              );
+              // Add any new players who are in the backend list but not local.
+              const currentIds = new Set(mergedPlayers.map(p => p.id));
+              transformedBackendPlayers.forEach(backendPlayer => {
+                if (!currentIds.has(backendPlayer.id)) {
+                  mergedPlayers.push(backendPlayer);
+                }
+              });
 
-              return rotatePlayers(mergedPlayers, playerId);
+              const newPlayerOrder = rotatePlayers(mergedPlayers, playerId);
+
+              if (isEqual(newPlayerOrder, prevPlayerInfo)) {
+                return prevPlayerInfo;
+              }
+
+              return newPlayerOrder;
             });
           },
         );
@@ -247,23 +266,13 @@ const GamePage = () => {
     }, 300), // 300ms delay
   ).current;
 
-  // Debounced player update
-  const debouncedUpdatePlayer = useRef(
-    debounce((player: Player) => {
-      updatePlayer(player);
-    }, 500), // 500ms delay
-  ).current;
-
-  const handleDiceChange = (delta: number) => {
+  const handleDiceChange = useCallback((delta: number) => {
     setChallengeDice(prev => {
       const newVal = Math.max(0, prev + delta);
-
-      // Use debounced update to prevent crashing
       debouncedUpdateDice(newVal);
-
       return newVal;
     });
-  };
+  }, [debouncedUpdateDice]);
 
   if (loading) {
     return (

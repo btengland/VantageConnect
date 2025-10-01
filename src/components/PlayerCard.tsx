@@ -763,4 +763,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PlayerCard;
+export default React.memo(PlayerCard);
