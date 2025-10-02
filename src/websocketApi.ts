@@ -63,7 +63,7 @@ export class GameWebSocket {
       const timeout = setTimeout(() => {
         this.off(handler);
         reject(new Error(`Timeout: No response for action '${action}'`));
-      }, 10000);
+      }, 15000);
 
       handler = (data: any) => {
         if (

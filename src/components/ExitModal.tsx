@@ -1,15 +1,34 @@
-import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { SharedStyles } from './SharedStyles';
 import BaseModal from './BaseModal';
 import CustomText from './CustomText';
+import { leaveGame } from '../api';
 
 type ExitModalProps = {
+  playerId: number;
   isOpen: boolean;
   toggleModal: (navigate?: boolean) => void;
 };
 
-const ExitModal = ({ isOpen, toggleModal }: ExitModalProps) => {
+const ExitModal = ({ playerId, isOpen, toggleModal }: ExitModalProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleExit = async () => {
+    setIsLoading(true);
+
+    try {
+      // tell backend to remove me
+      await leaveGame(playerId);
+
+      // now navigate home
+      toggleModal(true);
+    } catch (err) {
+      console.error('Failed to leave game:', err);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <BaseModal
       isOpen={isOpen}
@@ -22,9 +41,13 @@ const ExitModal = ({ isOpen, toggleModal }: ExitModalProps) => {
             Close
           </CustomText>
         </Pressable>
-        <Pressable style={styles.button} onPress={() => toggleModal(true)}>
+        <Pressable style={styles.button} onPress={handleExit}>
           <CustomText style={styles.textStyle} small bold>
-            Exit
+            {isLoading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              'Exit'
+            )}
           </CustomText>
         </Pressable>
       </View>

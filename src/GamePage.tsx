@@ -73,11 +73,17 @@ const GamePage = () => {
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const playerInfoRef = useRef(playerInfo);
 
-  const setPlayerInfoWithRef = useCallback((newState: Player[] | ((prevState: Player[]) => Player[])) => {
-    const newPlayerInfo = typeof newState === 'function' ? newState(playerInfoRef.current) : newState;
-    playerInfoRef.current = newPlayerInfo;
-    setPlayerInfo(newPlayerInfo);
-  }, []);
+  const setPlayerInfoWithRef = useCallback(
+    (newState: Player[] | ((prevState: Player[]) => Player[])) => {
+      const newPlayerInfo =
+        typeof newState === 'function'
+          ? newState(playerInfoRef.current)
+          : newState;
+      playerInfoRef.current = newPlayerInfo;
+      setPlayerInfo(newPlayerInfo);
+    },
+    [],
+  );
   const [loading, setLoading] = useState(true);
 
   const challengeDiceInitialized = useRef(false);
@@ -99,23 +105,26 @@ const GamePage = () => {
     }, 300), // 300ms delay
   ).current;
 
-  const handleUpdatePlayer = useCallback((updates: Partial<Player>) => {
-    let fullPlayer: Player | undefined;
-    setPlayerInfoWithRef(prev =>
-      prev.map(p => {
-        if (p.id === playerId) {
-          const updatedPlayer = { ...p, ...updates };
-          fullPlayer = updatedPlayer;
-          return updatedPlayer;
-        }
-        return p;
-      }),
-    );
+  const handleUpdatePlayer = useCallback(
+    (updates: Partial<Player>) => {
+      let fullPlayer: Player | undefined;
+      setPlayerInfoWithRef(prev =>
+        prev.map(p => {
+          if (p.id === playerId) {
+            const updatedPlayer = { ...p, ...updates };
+            fullPlayer = updatedPlayer;
+            return updatedPlayer;
+          }
+          return p;
+        }),
+      );
 
-    if (fullPlayer) {
-      debouncedUpdatePlayer(fullPlayer);
-    }
-  }, [playerId, setPlayerInfoWithRef, debouncedUpdatePlayer]);
+      if (fullPlayer) {
+        debouncedUpdatePlayer(fullPlayer);
+      }
+    },
+    [playerId, setPlayerInfoWithRef, debouncedUpdatePlayer],
+  );
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
     const index = players.findIndex(p => p.id === currentPlayerId);
@@ -277,13 +286,16 @@ const GamePage = () => {
     }, 300), // 300ms delay
   ).current;
 
-  const handleDiceChange = useCallback((delta: number) => {
-    setChallengeDice(prev => {
-      const newVal = Math.max(0, prev + delta);
-      debouncedUpdateDice(newVal);
-      return newVal;
-    });
-  }, [debouncedUpdateDice]);
+  const handleDiceChange = useCallback(
+    (delta: number) => {
+      setChallengeDice(prev => {
+        const newVal = Math.max(0, prev + delta);
+        debouncedUpdateDice(newVal);
+        return newVal;
+      });
+    },
+    [debouncedUpdateDice],
+  );
 
   if (loading) {
     return (
@@ -387,7 +399,11 @@ const GamePage = () => {
         </View>
       </View>
 
-      <ExitModal isOpen={isOpen} toggleModal={toggleModal} />
+      <ExitModal
+        playerId={playerId}
+        isOpen={isOpen}
+        toggleModal={toggleModal}
+      />
     </LinearGradient>
   );
 };
