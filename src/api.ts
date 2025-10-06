@@ -91,6 +91,6 @@ export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
 };
 
 export const leaveGame = async (playerId: number) => {
-  wsClient.sendMessage({ action: 'leaveGame', playerId });
-  return await wsClient.once('leaveGame');
+  wsClient.sendMessage({ action: 'leaveSession', playerId });
+  return await wsClient.once('leaveSession');
 };
