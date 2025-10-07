@@ -4,7 +4,6 @@ export class GameWebSocket {
   private ws: WebSocket | null = null;
   private url: string;
   private messageHandlers: ((data: any) => void)[] = [];
-  private heartbeatInterval: any = null;
   private reconnectTimeout: any = null;
 
   constructor(url: string) {
@@ -18,9 +17,6 @@ export class GameWebSocket {
       this.ws.onopen = () => {
         console.log('WebSocket connected');
         resolve();
-
-        // Start heartbeat (ping every 5 minutes)
-        this.startHeartbeat();
       };
 
       this.ws.onerror = err => {
@@ -39,9 +35,6 @@ export class GameWebSocket {
 
       this.ws.onclose = () => {
         console.log('WebSocket closed');
-
-        // Stop heartbeat when closed
-        this.stopHeartbeat();
 
         // Attempt to reconnect after short delay
         this.scheduleReconnect();
@@ -95,7 +88,6 @@ export class GameWebSocket {
   }
 
   close() {
-    this.stopHeartbeat();
     clearTimeout(this.reconnectTimeout);
     this.ws?.close();
     this.ws = null;
@@ -104,26 +96,6 @@ export class GameWebSocket {
 
   isConnected(): boolean {
     return !!this.ws && this.ws.readyState === WebSocket.OPEN;
-  }
-
-  // --- Heartbeat methods ---
-  private startHeartbeat() {
-    this.heartbeatInterval = setInterval(() => {
-      if (this.isConnected()) {
-        try {
-          this.sendMessage({ action: 'ping' });
-        } catch (err) {
-          console.warn('Heartbeat ping failed', err);
-        }
-      }
-    }, 5 * 60 * 1000); // every 5 minutes
-  }
-
-  private stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
   }
 
   // --- Auto-reconnect ---
