@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,6 +20,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
 import { getOrdinal, lightenColor } from '../utils';
 import { endTurn } from '../api';
+import { debounce, isEqual } from 'lodash';
 
 type SkillToken = { quantity: number };
 type ImpactDiceSlot = { symbol: string; checked: boolean };
@@ -55,9 +56,51 @@ function PlayerCard({
   onUpdatePlayer,
   totalPlayers,
 }: PlayerCardProps) {
+  const [localPlayer, setLocalPlayer] = useState(player);
   const [isLoading, setIsLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
+
+  // Debounced update to the parent
+  const debouncedOnUpdatePlayer = useCallback(
+    debounce((p: Player) => {
+      onUpdatePlayer(p);
+    }, 500), // 500ms delay
+    [onUpdatePlayer],
+  );
+
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    // When localPlayer changes, call the debounced update function.
+    debouncedOnUpdatePlayer(localPlayer);
+
+    // Cleanup function to cancel any pending debounced calls
+    return () => {
+      debouncedOnUpdatePlayer.cancel();
+    };
+  }, [localPlayer, debouncedOnUpdatePlayer]);
+
+  useEffect(() => {
+    // This effect syncs the local state with the `player` prop from the parent.
+    if (isEditable) {
+      // If the user is editing this card, we only want to accept authoritative
+      // changes from the parent, like `turn` status, to avoid overwriting input.
+      if (player.turn !== localPlayer.turn) {
+        setLocalPlayer(prev => ({ ...prev, turn: player.turn }));
+      }
+    } else {
+      // If the card is not editable (another player's card), we accept all
+      // changes from the parent if the data is different.
+      if (!isEqual(player, localPlayer)) {
+        setLocalPlayer(player);
+      }
+    }
+  }, [player, localPlayer, isEditable]);
 
   useEffect(() => {
     Animated.loop(
@@ -79,14 +122,14 @@ function PlayerCard({
   }, [pulseAnim]);
 
   const updatePlayer = (updates: Partial<Player>) => {
-    onUpdatePlayer(updates);
+    setLocalPlayer(prev => ({ ...prev, ...updates }));
   };
 
   const handleAddImpactSlot = () => {
     if (!isEditable) return;
     updatePlayer({
       impactDiceSlots: [
-        ...player.impactDiceSlots,
+        ...localPlayer.impactDiceSlots,
         { symbol: 'any', checked: false },
       ],
     });
@@ -94,14 +137,14 @@ function PlayerCard({
 
   const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
     if (!isEditable) return;
-    const slots = [...player.impactDiceSlots];
+    const slots = [...localPlayer.impactDiceSlots];
     slots[index] = newSlot;
     updatePlayer({ impactDiceSlots: slots });
   };
 
   const handleRemoveImpactSlot = (index: number) => {
     if (!isEditable) return;
-    const slots = player.impactDiceSlots.filter((_, i) => i !== index);
+    const slots = localPlayer.impactDiceSlots.filter((_, i) => i !== index);
     updatePlayer({ impactDiceSlots: slots });
   };
 
@@ -110,9 +153,11 @@ function PlayerCard({
     change: 1 | -1,
   ) => {
     if (!isEditable) return;
-    const currentLevel = player.statuses[status];
+    const currentLevel = localPlayer.statuses[status];
     const newLevel = Math.max(0, Math.min(6, currentLevel + change));
-    updatePlayer({ statuses: { ...player.statuses, [status]: newLevel } });
+    updatePlayer({
+      statuses: { ...localPlayer.statuses, [status]: newLevel },
+    });
   };
 
   // Reset loading when it becomes this player's turn again
@@ -141,7 +186,7 @@ function PlayerCard({
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
-  const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
+  const lighterBg = lightenColor(getCharacterColor(localPlayer.character), 0.8);
 
   return (
     <KeyboardAvoidingView
@@ -155,7 +200,7 @@ function PlayerCard({
         >
           {/* Header */}
           <CustomText style={styles.sectionHeader} small bold>
-            {getOrdinal(player.playerNumber)} Player
+            {getOrdinal(localPlayer.playerNumber)} Player
           </CustomText>
 
           {/* Current Turn */}
@@ -199,7 +244,7 @@ function PlayerCard({
             </CustomText>
             <TextInput
               style={styles.value}
-              value={player.name}
+              value={localPlayer.name}
               placeholder="Enter your name"
               editable={isEditable}
               onChangeText={text => updatePlayer({ name: text })}
@@ -213,7 +258,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.character}
+                selectedValue={localPlayer.character}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
@@ -243,7 +288,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.escapePod}
+                selectedValue={localPlayer.escapePod}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
@@ -288,7 +333,7 @@ function PlayerCard({
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.locationInput, { color: lighterBg }]}
-                value={player.location}
+                value={localPlayer.location}
                 editable={isEditable}
                 onChangeText={text => updatePlayer({ location: text })}
               />
@@ -301,7 +346,7 @@ function PlayerCard({
               Skill Tokens
             </CustomText>
             <View style={styles.skillTokenGrid}>
-              {player.skillTokens.map((token, index) => (
+              {localPlayer.skillTokens.map((token, index) => (
                 <View key={index} style={styles.skillTokenBox}>
                   <View style={styles.iconBox}>
                     <View style={styles.tokenContent}>
@@ -320,7 +365,7 @@ function PlayerCard({
                             style={styles.tokenButton}
                             onPress={() => {
                               if (!isEditable) return;
-                              const newTokens = player.skillTokens.map(
+                              const newTokens = localPlayer.skillTokens.map(
                                 (token, i) =>
                                   i === index
                                     ? {
@@ -348,7 +393,7 @@ function PlayerCard({
                             style={styles.tokenButton}
                             onPress={() => {
                               if (!isEditable) return;
-                              const newTokens = player.skillTokens.map(
+                              const newTokens = localPlayer.skillTokens.map(
                                 (token, i) =>
                                   i === index
                                     ? { ...token, quantity: token.quantity + 1 }
@@ -376,7 +421,7 @@ function PlayerCard({
               Impact Dice Slots
             </CustomText>
             <View style={styles.impactGrid}>
-              {player.impactDiceSlots.map((slot, index) => (
+              {localPlayer.impactDiceSlots.map((slot, index) => (
                 <View key={index} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
@@ -456,7 +501,7 @@ function PlayerCard({
                           if (!isEditable) return;
                           updatePlayer({
                             statuses: {
-                              ...player.statuses,
+                              ...localPlayer.statuses,
                               [status]: i + 1,
                             },
                           });
@@ -466,7 +511,7 @@ function PlayerCard({
                           style={[
                             styles.statusDot,
                             i <
-                            player.statuses[
+                            localPlayer.statuses[
                               status as 'heart' | 'star' | 'timer-sand-full'
                             ]
                               ? styles.statusDotFilled
@@ -490,7 +535,7 @@ function PlayerCard({
                     )}
                     <CustomText style={styles.statusLevel}>
                       {
-                        player.statuses[
+                        localPlayer.statuses[
                           status as 'heart' | 'star' | 'timer-sand-full'
                         ]
                       }
@@ -520,7 +565,7 @@ function PlayerCard({
             <TextInput
               style={styles.journalInput}
               multiline
-              value={player.journalText}
+              value={localPlayer.journalText}
               placeholder="Write your notes here..."
               editable={isEditable}
               onChangeText={text => updatePlayer({ journalText: text })}
