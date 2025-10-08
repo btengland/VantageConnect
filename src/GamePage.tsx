@@ -263,39 +263,33 @@ const GamePage = () => {
   useEffect(() => {
     // Keep viewedPlayer in sync with playerInfo, and set initial viewed player
     if (playerInfo.length > 0) {
-      if (viewedPlayer) {
+      const viewedPlayerExists =
+        viewedPlayer && playerInfo.some(p => p.id === viewedPlayer.id);
+
+      if (viewedPlayerExists) {
         const updatedViewedPlayer = playerInfo.find(
           p => p.id === viewedPlayer.id,
-        );
-        if (
-          updatedViewedPlayer &&
-          !isEqual(updatedViewedPlayer, viewedPlayer)
-        ) {
+        )!; // We know it exists because of the check above
+        if (!isEqual(updatedViewedPlayer, viewedPlayer)) {
           setViewedPlayer(updatedViewedPlayer);
         }
       } else {
+        // If no player is being viewed, or if the viewed player left,
+        // default to the first player in the list.
         setViewedPlayer(playerInfo[0]);
       }
+    } else {
+      // If there are no players, there's no one to view.
+      setViewedPlayer(null);
     }
-  }, [playerInfo]);
+  }, [playerInfo, viewedPlayer]);
 
-  // Debounced dice update so rapid clicks don't crash the app
-  const debouncedUpdateDice = useRef(
-    debounce((val: number) => {
-      updateChallengeDice(sessionCode, val);
-    }, 300), // 300ms delay
-  ).current;
-
-  const handleDiceChange = useCallback(
-    (delta: number) => {
-      setChallengeDice(prev => {
-        const newVal = Math.max(0, prev + delta);
-        debouncedUpdateDice(newVal);
-        return newVal;
-      });
-    },
-    [debouncedUpdateDice],
-  );
+  const handleDiceChange = useCallback((delta: number) => {
+    setChallengeDice(prev => {
+      const newVal = Math.max(0, prev + delta);
+      return newVal;
+    });
+  }, []);
 
   if (loading) {
     return (
