@@ -27,9 +27,20 @@ export class GameWebSocket {
       this.ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data);
-          this.messageHandlers.forEach(h => h(data));
-        } catch (err) {
-          console.error('Invalid message data', event.data);
+          this.messageHandlers.forEach(h => {
+            try {
+              h(data);
+            } catch (handlerErr) {
+              console.error('Handler error:', handlerErr, 'Data:', data);
+            }
+          });
+        } catch (parseErr) {
+          console.error(
+            'Failed to parse WebSocket message:',
+            parseErr,
+            'Raw data:',
+            event.data,
+          );
         }
       };
 
