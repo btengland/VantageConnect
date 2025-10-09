@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { debounce } from 'lodash';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
 import IconPicker from './IconPicker';
@@ -56,8 +57,31 @@ function PlayerCard({
   totalPlayers,
 }: PlayerCardProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [editablePlayer, setEditablePlayer] = useState(player);
+  const isEditing = useRef(false);
+
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
+
+  const debouncedUpdate = useRef(
+    debounce((updates: Partial<Player>) => {
+      onUpdatePlayer(updates);
+    }, 500),
+  ).current;
+
+  useEffect(() => {
+    // If the user is actively typing, don't overwrite their changes.
+    // Only update the 'turn' status, which is controlled by the server.
+    if (isEditing.current) {
+      setEditablePlayer(prev => ({
+        ...prev,
+        turn: player.turn,
+      }));
+    } else {
+      // Otherwise, update the whole card with the latest data from the server.
+      setEditablePlayer(player);
+    }
+  }, [player]);
 
   useEffect(() => {
     Animated.loop(
@@ -79,14 +103,18 @@ function PlayerCard({
   }, [pulseAnim]);
 
   const updatePlayer = (updates: Partial<Player>) => {
-    onUpdatePlayer(updates);
+    // Update local state immediately for a responsive UI
+    const newPlayerState = { ...editablePlayer, ...updates };
+    setEditablePlayer(newPlayerState);
+    // Debounce the call to the parent (and thus the backend)
+    debouncedUpdate(updates);
   };
 
   const handleAddImpactSlot = () => {
     if (!isEditable) return;
     updatePlayer({
       impactDiceSlots: [
-        ...player.impactDiceSlots,
+        ...editablePlayer.impactDiceSlots,
         { symbol: 'any', checked: false },
       ],
     });
@@ -94,14 +122,14 @@ function PlayerCard({
 
   const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
     if (!isEditable) return;
-    const slots = [...player.impactDiceSlots];
+    const slots = [...editablePlayer.impactDiceSlots];
     slots[index] = newSlot;
     updatePlayer({ impactDiceSlots: slots });
   };
 
   const handleRemoveImpactSlot = (index: number) => {
     if (!isEditable) return;
-    const slots = player.impactDiceSlots.filter((_, i) => i !== index);
+    const slots = editablePlayer.impactDiceSlots.filter((_, i) => i !== index);
     updatePlayer({ impactDiceSlots: slots });
   };
 
@@ -110,9 +138,11 @@ function PlayerCard({
     change: 1 | -1,
   ) => {
     if (!isEditable) return;
-    const currentLevel = player.statuses[status];
+    const currentLevel = editablePlayer.statuses[status];
     const newLevel = Math.max(0, Math.min(6, currentLevel + change));
-    updatePlayer({ statuses: { ...player.statuses, [status]: newLevel } });
+    updatePlayer({
+      statuses: { ...editablePlayer.statuses, [status]: newLevel },
+    });
   };
 
   // Reset loading when it becomes this player's turn again
@@ -127,7 +157,7 @@ function PlayerCard({
     setIsLoading(true);
     try {
       // This call informs the backend. The UI update will come via WebSocket.
-      await endTurn(player.sessionCode, player.id);
+      await endTurn(editablePlayer.sessionCode, editablePlayer.id);
       // We DON'T set isLoading to false here. The button will disappear
       // when the player's `turn` status is updated via WebSocket,
       // which is the source of truth.
@@ -141,7 +171,10 @@ function PlayerCard({
   const renderPickerItems = (items: string[]) =>
     items.map(item => <Picker.Item key={item} label={item} value={item} />);
 
-  const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
+  const lighterBg = lightenColor(
+    getCharacterColor(editablePlayer.character),
+    0.8,
+  );
 
   return (
     <KeyboardAvoidingView
@@ -155,11 +188,11 @@ function PlayerCard({
         >
           {/* Header */}
           <CustomText style={styles.sectionHeader} small bold>
-            {getOrdinal(player.playerNumber)} Player
+            {getOrdinal(editablePlayer.playerNumber)} Player
           </CustomText>
 
           {/* Current Turn */}
-          {player.turn && player.id === currentPlayerId && (
+          {editablePlayer.turn && editablePlayer.id === currentPlayerId && (
             <View style={styles.buttonContainer}>
               <View style={[styles.turnTextContainer, styles.myTurnBackground]}>
                 <CustomText style={styles.turnText} small bold>
@@ -199,9 +232,11 @@ function PlayerCard({
             </CustomText>
             <TextInput
               style={styles.value}
-              value={player.name}
+              value={editablePlayer.name}
               placeholder="Enter your name"
               editable={isEditable}
+              onFocus={() => (isEditing.current = true)}
+              onBlur={() => (isEditing.current = false)}
               onChangeText={text => updatePlayer({ name: text })}
             />
           </View>
@@ -213,7 +248,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.character}
+                selectedValue={editablePlayer.character}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
@@ -243,7 +278,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.escapePod}
+                selectedValue={editablePlayer.escapePod}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
@@ -288,8 +323,10 @@ function PlayerCard({
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.locationInput, { color: lighterBg }]}
-                value={player.location}
+                value={editablePlayer.location}
                 editable={isEditable}
+                onFocus={() => (isEditing.current = true)}
+                onBlur={() => (isEditing.current = false)}
                 onChangeText={text => updatePlayer({ location: text })}
               />
             </Animated.View>
@@ -301,7 +338,7 @@ function PlayerCard({
               Skill Tokens
             </CustomText>
             <View style={styles.skillTokenGrid}>
-              {player.skillTokens.map((token, index) => (
+              {editablePlayer.skillTokens.map((token, index) => (
                 <View key={index} style={styles.skillTokenBox}>
                   <View style={styles.iconBox}>
                     <View style={styles.tokenContent}>
@@ -320,8 +357,8 @@ function PlayerCard({
                             style={styles.tokenButton}
                             onPress={() => {
                               if (!isEditable) return;
-                              const newTokens = player.skillTokens.map(
-                                (token, i) =>
+                              const newTokens =
+                                editablePlayer.skillTokens.map((token, i) =>
                                   i === index
                                     ? {
                                         ...token,
@@ -331,7 +368,7 @@ function PlayerCard({
                                         ),
                                       }
                                     : token,
-                              );
+                                );
                               updatePlayer({ skillTokens: newTokens });
                             }}
                           >
@@ -348,12 +385,15 @@ function PlayerCard({
                             style={styles.tokenButton}
                             onPress={() => {
                               if (!isEditable) return;
-                              const newTokens = player.skillTokens.map(
-                                (token, i) =>
+                              const newTokens =
+                                editablePlayer.skillTokens.map((token, i) =>
                                   i === index
-                                    ? { ...token, quantity: token.quantity + 1 }
+                                    ? {
+                                        ...token,
+                                        quantity: token.quantity + 1,
+                                      }
                                     : token,
-                              );
+                                );
                               updatePlayer({ skillTokens: newTokens });
                             }}
                           >
@@ -376,7 +416,7 @@ function PlayerCard({
               Impact Dice Slots
             </CustomText>
             <View style={styles.impactGrid}>
-              {player.impactDiceSlots.map((slot, index) => (
+              {editablePlayer.impactDiceSlots.map((slot, index) => (
                 <View key={index} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
@@ -456,7 +496,7 @@ function PlayerCard({
                           if (!isEditable) return;
                           updatePlayer({
                             statuses: {
-                              ...player.statuses,
+                              ...editablePlayer.statuses,
                               [status]: i + 1,
                             },
                           });
@@ -466,7 +506,7 @@ function PlayerCard({
                           style={[
                             styles.statusDot,
                             i <
-                            player.statuses[
+                            editablePlayer.statuses[
                               status as 'heart' | 'star' | 'timer-sand-full'
                             ]
                               ? styles.statusDotFilled
@@ -490,7 +530,7 @@ function PlayerCard({
                     )}
                     <CustomText style={styles.statusLevel}>
                       {
-                        player.statuses[
+                        editablePlayer.statuses[
                           status as 'heart' | 'star' | 'timer-sand-full'
                         ]
                       }
@@ -520,9 +560,11 @@ function PlayerCard({
             <TextInput
               style={styles.journalInput}
               multiline
-              value={player.journalText}
+              value={editablePlayer.journalText}
               placeholder="Write your notes here..."
               editable={isEditable}
+              onFocus={() => (isEditing.current = true)}
+              onBlur={() => (isEditing.current = false)}
               onChangeText={text => updatePlayer({ journalText: text })}
             />
           </View>

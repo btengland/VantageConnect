@@ -107,23 +107,20 @@ const GamePage = () => {
 
   const handleUpdatePlayer = useCallback(
     (updates: Partial<Player>) => {
-      let fullPlayer: Player | undefined;
-      setPlayerInfoWithRef(prev =>
-        prev.map(p => {
-          if (p.id === playerId) {
-            const updatedPlayer = { ...p, ...updates };
-            fullPlayer = updatedPlayer;
-            return updatedPlayer;
-          }
-          return p;
-        }),
-      );
+      // Find the latest version of the player from the ref
+      const currentPlayer = playerInfoRef.current.find(p => p.id === playerId);
 
-      if (fullPlayer) {
+      if (currentPlayer) {
+        // Construct the full player object with the updates
+        const fullPlayer = { ...currentPlayer, ...updates };
+        // Send the update to the backend, debounced
         debouncedUpdatePlayer(fullPlayer);
       }
+      // We no longer update the state directly here.
+      // The state will be updated via the WebSocket message,
+      // which is the single source of truth.
     },
-    [playerId, setPlayerInfoWithRef, debouncedUpdatePlayer],
+    [playerId, debouncedUpdatePlayer],
   );
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
