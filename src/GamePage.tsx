@@ -261,23 +261,29 @@ const GamePage = () => {
   }, [playerId, sessionCode]);
 
   useEffect(() => {
-    // Keep viewedPlayer in sync with playerInfo, and set initial viewed player
-    if (playerInfo.length > 0) {
-      if (viewedPlayer) {
-        const updatedViewedPlayer = playerInfo.find(
-          p => p.id === viewedPlayer.id,
-        );
-        if (
-          updatedViewedPlayer &&
-          !isEqual(updatedViewedPlayer, viewedPlayer)
-        ) {
-          setViewedPlayer(updatedViewedPlayer);
-        }
-      } else {
-        setViewedPlayer(playerInfo[0]);
+    // Keep viewedPlayer in sync with playerInfo
+    if (playerInfo.length === 0) {
+      if (viewedPlayer !== null) {
+        setViewedPlayer(null);
       }
+      return;
     }
-  }, [playerInfo]);
+
+    const viewedPlayerExists = playerInfo.some(p => p.id === viewedPlayer?.id);
+
+    if (viewedPlayerExists) {
+      const updatedViewedPlayer = playerInfo.find(
+        p => p.id === viewedPlayer!.id,
+      )!;
+      if (!isEqual(updatedViewedPlayer, viewedPlayer)) {
+        setViewedPlayer(updatedViewedPlayer);
+      }
+    } else {
+      // Either no player was viewed, or the viewed player left.
+      // In either case, view the first player.
+      setViewedPlayer(playerInfo[0]);
+    }
+  }, [playerInfo, viewedPlayer]);
 
   // Debounced dice update so rapid clicks don't crash the app
   const debouncedUpdateDice = useRef(
