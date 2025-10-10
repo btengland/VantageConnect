@@ -30,28 +30,28 @@ const skillTokenIcons = [
   require('../assets/Overpower.png'),
 ];
 
+type SkillToken = { quantity: number };
+type Statuses = { heart: number; star: number; 'timer-sand-full': number };
+export type Player = {
+  id: number;
+  sessionCode: number;
+  playerNumber: number;
+  name: string;
+  character: string;
+  escapePod: string;
+  location: string;
+  skillTokens: SkillToken[];
+  turn: boolean;
+  journalText: string;
+  statuses: Statuses;
+  impactDiceSlots: any[];
+};
+
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
     playerId: number;
     sessionCode: number;
-  };
-
-  type SkillToken = { quantity: number };
-  type Statuses = { heart: number; star: number; 'timer-sand-full': number };
-  type Player = {
-    id: number;
-    sessionCode: number;
-    playerNumber: number;
-    name: string;
-    character: string;
-    escapePod: string;
-    location: string;
-    skillTokens: SkillToken[];
-    turn: boolean;
-    journalText: string;
-    statuses: Statuses;
-    impactDiceSlots: any[];
   };
 
   type BackendPlayer = {

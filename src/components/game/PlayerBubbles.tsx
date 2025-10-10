@@ -2,18 +2,13 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import CustomText from '../CustomText';
 import { getCharacterColor } from '../../utils';
-
-type Player = {
-  id: number;
-  name: string;
-  character: string;
-  turn: boolean;
-};
+import { Player } from '../../screens/GamePage';
+import { Dispatch, SetStateAction } from 'react';
 
 type PlayerBubblesProps = {
   players: Player[];
   viewedPlayer: Player | null;
-  onSetViewedPlayer: (player: Player) => void;
+  onSetViewedPlayer: Dispatch<SetStateAction<Player | null>>;
 };
 
 const PlayerBubbles = ({
