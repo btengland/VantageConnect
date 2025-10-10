@@ -72,6 +72,9 @@ const GamePage = () => {
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
+  const debouncedSetViewedPlayer = useRef(
+    debounce(setViewedPlayer, 100, { leading: false, trailing: true }),
+  ).current;
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const playerInfoRef = useRef(playerInfo);
 
@@ -279,7 +282,7 @@ const GamePage = () => {
     // Keep viewedPlayer in sync with playerInfo
     if (playerInfo.length === 0) {
       if (viewedPlayer !== null) {
-        setViewedPlayer(null);
+        debouncedSetViewedPlayer(null);
       }
       return;
     }
@@ -290,15 +293,16 @@ const GamePage = () => {
       const updatedViewedPlayer = playerInfo.find(
         p => p.id === viewedPlayer!.id,
       )!;
+      // Debounce the update to prevent crashing on rapid changes
       if (!isEqual(updatedViewedPlayer, viewedPlayer)) {
-        setViewedPlayer(updatedViewedPlayer);
+        debouncedSetViewedPlayer(updatedViewedPlayer);
       }
     } else {
       // Either no player was viewed, or the viewed player left.
       // In either case, view the first player.
-      setViewedPlayer(playerInfo[0]);
+      debouncedSetViewedPlayer(playerInfo[0]);
     }
-  }, [playerInfo, viewedPlayer]);
+  }, [playerInfo, viewedPlayer, debouncedSetViewedPlayer]);
 
   // Debounced dice update so rapid clicks don't crash the app
   const debouncedUpdateDice = useRef(
