@@ -74,6 +74,7 @@ const GamePage = () => {
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const playerInfoRef = useRef(playerInfo);
+  const focusedInputRef = useRef<string | null>(null);
 
   const setPlayerInfoWithRef = useCallback(
     (newState: Player[] | ((prevState: Player[]) => Player[])) => {
@@ -127,6 +128,14 @@ const GamePage = () => {
     },
     [playerId, setPlayerInfoWithRef, debouncedUpdatePlayer],
   );
+
+  const handleInputFocus = (field: string) => {
+    focusedInputRef.current = field;
+  };
+
+  const handleInputBlur = () => {
+    focusedInputRef.current = null;
+  };
 
   const rotatePlayers = (players: Player[], currentPlayerId: number) => {
     const index = players.findIndex(p => p.id === currentPlayerId);
@@ -216,12 +225,25 @@ const GamePage = () => {
                   if (backendPlayer) {
                     // This player exists in both lists.
                     if (localPlayer.id === playerId) {
-                      // It's the current user. Preserve local state but take
-                      // authoritative updates from the server (like turn status).
+                    // It's the current user. Preserve local state for the focused field,
+                    // but take authoritative updates from the server for everything else.
+                    const focusedField =
+                      focusedInputRef.current as keyof Player | null;
+
+                    if (
+                      focusedField &&
+                      localPlayer[focusedField] !== backendPlayer[focusedField]
+                    ) {
+                      // If user is editing a field, keep their local value for that field.
+                      // Take the rest of the updates from the backend.
                       return {
-                        ...localPlayer,
-                        turn: backendPlayer.turn,
+                        ...backendPlayer, // Take all fresh data from the server
+                        [focusedField]: localPlayer[focusedField], // But keep the user's current input
                       };
+                    }
+                    // No specific field is focused and being typed in, or the values are the same.
+                    // The server's version is most up-to-date.
+                    return backendPlayer;
                     }
                     // It's another player. Use the server's version.
                     return backendPlayer;
@@ -349,6 +371,8 @@ const GamePage = () => {
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}
               totalPlayers={playerInfo.length}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           )}
         </View>

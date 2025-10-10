@@ -47,6 +47,8 @@ type PlayerCardProps = {
   skillTokenIcons: any[];
   onUpdatePlayer: (updates: Partial<Player>) => void;
   totalPlayers: number;
+  onFocus: (field: string) => void;
+  onBlur: () => void;
 };
 
 function PlayerCard({
@@ -56,6 +58,8 @@ function PlayerCard({
   skillTokenIcons,
   onUpdatePlayer,
   totalPlayers,
+  onFocus,
+  onBlur,
 }: PlayerCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -195,6 +199,8 @@ function PlayerCard({
               placeholder="Enter your name"
               editable={isEditable}
               onChangeText={text => updatePlayer({ name: text })}
+              onFocus={() => onFocus('name')}
+              onBlur={onBlur}
             />
           </View>
 
@@ -283,6 +289,8 @@ function PlayerCard({
                 value={player.location}
                 editable={isEditable}
                 onChangeText={text => updatePlayer({ location: text })}
+                onFocus={() => onFocus('location')}
+                onBlur={onBlur}
               />
             </Animated.View>
           </View>
@@ -377,6 +385,8 @@ function PlayerCard({
               placeholder="Write your notes here..."
               editable={isEditable}
               onChangeText={text => updatePlayer({ journalText: text })}
+              onFocus={() => onFocus('journalText')}
+              onBlur={onBlur}
             />
           </View>
         </ScrollView>
