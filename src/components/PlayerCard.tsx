@@ -47,6 +47,8 @@ type PlayerCardProps = {
   skillTokenIcons: any[];
   onUpdatePlayer: (updates: Partial<Player>) => void;
   totalPlayers: number;
+  onFocus: (field: string) => void;
+  onBlur: () => void;
 };
 
 function PlayerCard({
@@ -56,6 +58,8 @@ function PlayerCard({
   skillTokenIcons,
   onUpdatePlayer,
   totalPlayers,
+  onFocus,
+  onBlur,
 }: PlayerCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -194,6 +198,8 @@ function PlayerCard({
               value={player.name}
               placeholder="Enter your name"
               editable={isEditable}
+              onFocus={() => onFocus('name')}
+              onBlur={onBlur}
               onChangeText={text => updatePlayer({ name: text })}
             />
           </View>
@@ -282,6 +288,8 @@ function PlayerCard({
                 style={[styles.locationInput, { color: lighterBg }]}
                 value={player.location}
                 editable={isEditable}
+                onFocus={() => onFocus('location')}
+                onBlur={onBlur}
                 onChangeText={text => updatePlayer({ location: text })}
               />
             </Animated.View>
@@ -376,6 +384,8 @@ function PlayerCard({
               value={player.journalText}
               placeholder="Write your notes here..."
               editable={isEditable}
+              onFocus={() => onFocus('journalText')}
+              onBlur={onBlur}
               onChangeText={text => updatePlayer({ journalText: text })}
             />
           </View>

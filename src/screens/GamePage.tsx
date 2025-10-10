@@ -75,6 +75,9 @@ const GamePage = () => {
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const playerInfoRef = useRef(playerInfo);
 
+  // To track which input is currently focused by the user
+  const focusedInputRef = useRef<string | null>(null);
+
   const setPlayerInfoWithRef = useCallback(
     (newState: Player[] | ((prevState: Player[]) => Player[])) => {
       const newPlayerInfo =
@@ -142,6 +145,14 @@ const GamePage = () => {
   useEffect(() => {
     isMyTurnRef.current = isMyTurn;
   }, [isMyTurn]);
+
+  const handleFocus = useCallback((field: string) => {
+    focusedInputRef.current = field;
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    focusedInputRef.current = null;
+  }, []);
 
   useEffect(() => {
     const initWebSocket = async () => {
@@ -214,14 +225,16 @@ const GamePage = () => {
                 .map(localPlayer => {
                   const backendPlayer = backendPlayersMap.get(localPlayer.id);
                   if (backendPlayer) {
-                    // This player exists in both lists.
                     if (localPlayer.id === playerId) {
-                      // It's the current user. Preserve local state but take
-                      // authoritative updates from the server (like turn status).
-                      return {
-                        ...localPlayer,
-                        turn: backendPlayer.turn,
-                      };
+                      // It's the current user. Preserve local state for the focused field.
+                      const focusedField = focusedInputRef.current;
+                      if (focusedField) {
+                        return {
+                          ...backendPlayer, // Take most state from server
+                          [focusedField]: (localPlayer as any)[focusedField], // But keep local value for focused field
+                        };
+                      }
+                      return backendPlayer; // No field focused, take all updates.
                     }
                     // It's another player. Use the server's version.
                     return backendPlayer;
@@ -349,6 +362,8 @@ const GamePage = () => {
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}
               totalPlayers={playerInfo.length}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
             />
           )}
         </View>
