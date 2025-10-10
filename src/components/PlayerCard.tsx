@@ -20,6 +20,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
 import { getOrdinal, lightenColor } from '../utils';
 import { endTurn } from '../api';
+import SkillTokens from './player/SkillTokens';
+import StatusUpdates from './player/StatusUpdates';
 
 type SkillToken = { quantity: number };
 type ImpactDiceSlot = { symbol: string; checked: boolean };
@@ -103,16 +105,6 @@ function PlayerCard({
     if (!isEditable) return;
     const slots = player.impactDiceSlots.filter((_, i) => i !== index);
     updatePlayer({ impactDiceSlots: slots });
-  };
-
-  const handleStatusChange = (
-    status: 'heart' | 'star' | 'timer-sand-full',
-    change: 1 | -1,
-  ) => {
-    if (!isEditable) return;
-    const currentLevel = player.statuses[status];
-    const newLevel = Math.max(0, Math.min(6, currentLevel + change));
-    updatePlayer({ statuses: { ...player.statuses, [status]: newLevel } });
   };
 
   // Reset loading when it becomes this player's turn again
@@ -295,80 +287,12 @@ function PlayerCard({
             </Animated.View>
           </View>
 
-          {/* Skill Tokens */}
-          <View style={{ marginTop: 16 }}>
-            <CustomText style={styles.subHeader} small bold>
-              Skill Tokens
-            </CustomText>
-            <View style={styles.skillTokenGrid}>
-              {player.skillTokens.map((token, index) => (
-                <View key={index} style={styles.skillTokenBox}>
-                  <View style={styles.iconBox}>
-                    <View style={styles.tokenContent}>
-                      <View style={styles.tokenIcon}>
-                        <View style={styles.iconWrapper}>
-                          <Image
-                            source={skillTokenIcons[index]}
-                            style={{ width: 30, height: 30 }}
-                            resizeMode="contain"
-                          />
-                        </View>
-                      </View>
-                      <View style={styles.counterContainer}>
-                        {isEditable && (
-                          <Pressable
-                            style={styles.tokenButton}
-                            onPress={() => {
-                              if (!isEditable) return;
-                              const newTokens = player.skillTokens.map(
-                                (token, i) =>
-                                  i === index
-                                    ? {
-                                        ...token,
-                                        quantity: Math.max(
-                                          0,
-                                          token.quantity - 1,
-                                        ),
-                                      }
-                                    : token,
-                              );
-                              updatePlayer({ skillTokens: newTokens });
-                            }}
-                          >
-                            <CustomText style={styles.tokenButtonText}>
-                              -
-                            </CustomText>
-                          </Pressable>
-                        )}
-                        <CustomText style={styles.tokenQuantity}>
-                          {token.quantity}
-                        </CustomText>
-                        {isEditable && (
-                          <Pressable
-                            style={styles.tokenButton}
-                            onPress={() => {
-                              if (!isEditable) return;
-                              const newTokens = player.skillTokens.map(
-                                (token, i) =>
-                                  i === index
-                                    ? { ...token, quantity: token.quantity + 1 }
-                                    : token,
-                              );
-                              updatePlayer({ skillTokens: newTokens });
-                            }}
-                          >
-                            <CustomText style={styles.tokenButtonText}>
-                              +
-                            </CustomText>
-                          </Pressable>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
+          <SkillTokens
+            skillTokens={player.skillTokens}
+            skillTokenIcons={skillTokenIcons}
+            isEditable={isEditable}
+            onUpdate={newTokens => updatePlayer({ skillTokens: newTokens })}
+          />
 
           {/* Impact Dice */}
           <View style={{ marginTop: 16 }}>
@@ -435,82 +359,11 @@ function PlayerCard({
             )}
           </View>
 
-          {/* Status Updates */}
-          <View style={{ marginTop: 16 }}>
-            <CustomText style={styles.subHeader} small bold>
-              Status Updates
-            </CustomText>
-            <View style={styles.statusContainer}>
-              {['heart', 'star', 'timer-sand-full'].map(status => (
-                <View key={status} style={styles.statusRow}>
-                  <MaterialCommunityIcons
-                    name={status as any}
-                    size={30}
-                    color="black"
-                  />
-                  <View style={styles.statusTrack}>
-                    {[...Array(6)].map((_, i) => (
-                      <Pressable
-                        key={i}
-                        onPress={() => {
-                          if (!isEditable) return;
-                          updatePlayer({
-                            statuses: {
-                              ...player.statuses,
-                              [status]: i + 1,
-                            },
-                          });
-                        }}
-                      >
-                        <View
-                          style={[
-                            styles.statusDot,
-                            i <
-                            player.statuses[
-                              status as 'heart' | 'star' | 'timer-sand-full'
-                            ]
-                              ? styles.statusDotFilled
-                              : {},
-                          ]}
-                        />
-                      </Pressable>
-                    ))}
-                  </View>
-                  <View style={styles.statusControls}>
-                    {isEditable && (
-                      <Pressable
-                        onPress={() => handleStatusChange(status as any, -1)}
-                      >
-                        <MaterialCommunityIcons
-                          name="minus"
-                          size={30}
-                          color="black"
-                        />
-                      </Pressable>
-                    )}
-                    <CustomText style={styles.statusLevel}>
-                      {
-                        player.statuses[
-                          status as 'heart' | 'star' | 'timer-sand-full'
-                        ]
-                      }
-                    </CustomText>
-                    {isEditable && (
-                      <Pressable
-                        onPress={() => handleStatusChange(status as any, 1)}
-                      >
-                        <MaterialCommunityIcons
-                          name="plus"
-                          size={30}
-                          color="black"
-                        />
-                      </Pressable>
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
+          <StatusUpdates
+            statuses={player.statuses}
+            isEditable={isEditable}
+            onUpdate={newStatuses => updatePlayer({ statuses: newStatuses })}
+          />
 
           {/* Journal */}
           <View style={{ marginTop: 16 }}>
@@ -686,40 +539,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  statusContainer: {
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 6,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-  statusTrack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#ccc',
-    marginHorizontal: 4,
-  },
-  statusDotFilled: {
-    backgroundColor: '#025472',
-  },
-  statusControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusLevel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginHorizontal: 10,
-  },
   journalInput: {
     height: 300,
     backgroundColor: '#f0f0f0',
@@ -727,60 +546,6 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 14,
     textAlignVertical: 'top',
-  },
-
-  // SKILL TOKENS
-  skillTokenGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  skillTokenBox: {
-    width: '48%',
-    backgroundColor: '#eee',
-    padding: 8,
-    marginVertical: 4,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  iconBox: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  tokenContent: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  tokenIcon: {
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  iconWrapper: {
-    width: 30,
-    height: 30,
-  },
-  tokenQuantity: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  counterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 5,
-  },
-  tokenButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#444',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tokenButtonText: {
-    color: 'white',
-    fontSize: 20,
   },
 });
 

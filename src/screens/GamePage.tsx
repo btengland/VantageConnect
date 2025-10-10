@@ -2,12 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { debounce, isEqual } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import ExitModal from './components/ExitModal';
+import ExitModal from '../components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
-import PlayerCard from './components/PlayerCard';
+import PlayerCard from '../components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
-import CustomText from './components/CustomText';
-import { getCharacterColor } from './utils';
+import CustomText from '../components/CustomText';
+import { getCharacterColor } from '../utils';
+import GameHeader from '../components/game/GameHeader';
+import PlayerBubbles from '../components/game/PlayerBubbles';
 import {
   connectWebSocket,
   readPlayers,
@@ -16,40 +18,40 @@ import {
   onChallengeDiceUpdate,
   readChallengeDice,
   updatePlayer,
-} from './api';
+} from '../api';
 
 // Define icons once here, outside the component
 const skillTokenIcons = [
-  require('./assets/Move.png'),
-  require('./assets/Look.png'),
-  require('./assets/Engage.png'),
-  require('./assets/Help.png'),
-  require('./assets/Take.png'),
-  require('./assets/Overpower.png'),
+  require('../assets/Move.png'),
+  require('../assets/Look.png'),
+  require('../assets/Engage.png'),
+  require('../assets/Help.png'),
+  require('../assets/Take.png'),
+  require('../assets/Overpower.png'),
 ];
+
+type SkillToken = { quantity: number };
+type Statuses = { heart: number; star: number; 'timer-sand-full': number };
+export type Player = {
+  id: number;
+  sessionCode: number;
+  playerNumber: number;
+  name: string;
+  character: string;
+  escapePod: string;
+  location: string;
+  skillTokens: SkillToken[];
+  turn: boolean;
+  journalText: string;
+  statuses: Statuses;
+  impactDiceSlots: any[];
+};
 
 const GamePage = () => {
   const route = useRoute();
   const { playerId, sessionCode } = route.params as {
     playerId: number;
     sessionCode: number;
-  };
-
-  type SkillToken = { quantity: number };
-  type Statuses = { heart: number; star: number; 'timer-sand-full': number };
-  type Player = {
-    id: number;
-    sessionCode: number;
-    playerNumber: number;
-    name: string;
-    character: string;
-    escapePod: string;
-    location: string;
-    skillTokens: SkillToken[];
-    turn: boolean;
-    journalText: string;
-    statuses: Statuses;
-    impactDiceSlots: any[];
   };
 
   type BackendPlayer = {
@@ -325,72 +327,19 @@ const GamePage = () => {
           <CustomText style={styles.closeButtonText}>X</CustomText>
         </Pressable>
 
-        <View style={styles.sessionCode}>
-          <CustomText style={styles.mainText} small>
-            Session Code: {sessionCode}
-          </CustomText>
-        </View>
-
-        {/* Header */}
-        <View style={styles.diceContainer}>
-          <CustomText style={styles.mainText} bold>
-            Available Dice:
-          </CustomText>
-          <View style={styles.diceControl}>
-            {isMyTurn && (
-              <Pressable
-                onPress={() => handleDiceChange(-1)}
-                style={styles.diceButton}
-              >
-                <CustomText style={styles.diceButtonText}>-</CustomText>
-              </Pressable>
-            )}
-
-            <CustomText style={styles.diceValue}>{challengeDice}</CustomText>
-
-            {isMyTurn && (
-              <Pressable
-                onPress={() => handleDiceChange(1)}
-                style={styles.diceButton}
-              >
-                <CustomText style={styles.diceButtonText}>+</CustomText>
-              </Pressable>
-            )}
-          </View>
-        </View>
+        <GameHeader
+          sessionCode={sessionCode}
+          challengeDice={challengeDice}
+          isMyTurn={isMyTurn}
+          onDiceChange={handleDiceChange}
+        />
 
         <View style={styles.contentContainer}>
-          {/* Bubbles on top */}
-          <View style={styles.sidebar}>
-            {playerInfo.map(player => (
-              <View key={player.id} style={styles.innerSidebar}>
-                <Pressable
-                  onPress={() => setViewedPlayer(player)}
-                  style={[
-                    styles.bubble,
-                    { backgroundColor: getCharacterColor(player.character) },
-                    player.turn && {
-                      borderWidth: 3,
-                      borderColor: 'white',
-                    },
-                  ]}
-                >
-                  <CustomText style={styles.bubbleText} bold>
-                    {player.name?.trim()?.charAt(0)?.toUpperCase() || '?'}
-                  </CustomText>
-                </Pressable>
-
-                {player.id === viewedPlayer?.id && (
-                  <View
-                    style={[
-                      styles.triangle,
-                      { borderTopColor: getCharacterColor(player.character) },
-                    ]}
-                  />
-                )}
-              </View>
-            ))}
-          </View>
+          <PlayerBubbles
+            players={playerInfo}
+            viewedPlayer={viewedPlayer}
+            onSetViewedPlayer={setViewedPlayer}
+          />
 
           {viewedPlayer && (
             <PlayerCard
@@ -432,69 +381,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     flexDirection: 'column',
-  },
-  sidebar: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 10,
-    zIndex: 100,
-    marginTop: 16,
-  },
-  innerSidebar: {
-    alignItems: 'center',
-  },
-  bubble: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    zIndex: 10,
-  },
-  bubbleText: {
-    color: 'white',
-  },
-  diceContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
-    borderRadius: 16,
-    padding: 16,
-    alignSelf: 'center',
-    alignItems: 'center',
-  },
-  diceControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    marginTop: 8,
-  },
-  diceButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  diceButtonText: {
-    color: 'white',
-    fontSize: 24,
-  },
-  diceValue: {
-    fontSize: 24,
-  },
-  triangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 15,
-    marginTop: -2,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
   },
   closeButton: {
     position: 'absolute',

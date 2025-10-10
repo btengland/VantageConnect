@@ -4,8 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
 import { View, ActivityIndicator } from 'react-native';
 
-import HomePage from './src/HomePage';
-import GamePage from './src/GamePage';
+import HomePage from './src/screens/HomePage';
+import GamePage from './src/screens/GamePage';
 
 const Stack = createNativeStackNavigator();
 
