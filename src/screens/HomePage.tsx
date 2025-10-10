@@ -8,9 +8,9 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import JoinHostModal from './components/JoinHostModal';
+import JoinHostModal from '../components/JoinHostModal';
 import { StatusBar, useColorScheme } from 'react-native';
-import CustomText from './components/CustomText';
+import CustomText from '../components/CustomText';
 
 type GameData = {
   playerId: number;
@@ -38,8 +38,8 @@ const HomePage = () => {
     }
   };
 
-  const spaceImage = require('./assets/SpaceImage.jpg');
-  const discordLogo = require('./assets/DiscordLogo.png');
+  const spaceImage = require('../assets/SpaceImage.jpg');
+  const discordLogo = require('../assets/DiscordLogo.png');
 
   const openDiscord = () => {
     Linking.openURL('https://stonemaiergames.com/discord/');
