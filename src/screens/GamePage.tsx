@@ -87,6 +87,7 @@ const GamePage = () => {
     [],
   );
   const [loading, setLoading] = useState(true);
+  const focusedInputRef = useRef<string | null>(null);
 
   const challengeDiceInitialized = useRef(false);
 
@@ -216,20 +217,23 @@ const GamePage = () => {
                   if (backendPlayer) {
                     // This player exists in both lists.
                     if (localPlayer.id === playerId) {
-                      // It's the current user. Preserve local optimistic updates
-                      // for editable fields, but take everything else from the server
-                      // to prevent overwriting authoritative state.
-                      return {
-                        ...backendPlayer, // Start with server state
-                        name: localPlayer.name,
-                        character: localPlayer.character,
-                        escapePod: localPlayer.escapePod,
-                        location: localPlayer.location,
-                        skillTokens: localPlayer.skillTokens,
-                        journalText: localPlayer.journalText,
-                        statuses: localPlayer.statuses,
-                        impactDiceSlots: localPlayer.impactDiceSlots,
-                      };
+                      // It's the current user. Start with the authoritative server state.
+                      const mergedPlayer = { ...backendPlayer };
+
+                      // If the user is actively editing a field, do not overwrite
+                      // their input with the incoming server state for that field.
+                      if (
+                        focusedInputRef.current &&
+                        focusedInputRef.current in mergedPlayer &&
+                        focusedInputRef.current in localPlayer
+                      ) {
+                        const key =
+                          focusedInputRef.current as keyof typeof mergedPlayer;
+                        (mergedPlayer as any)[key] = (
+                          localPlayer as any
+                        )[key];
+                      }
+                      return mergedPlayer;
                     }
                     // It's another player. Use the server's version.
                     return backendPlayer;
@@ -373,6 +377,8 @@ const GamePage = () => {
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}
               totalPlayers={playerInfo.length}
+              onFocus={identifier => (focusedInputRef.current = identifier)}
+              onBlur={() => (focusedInputRef.current = null)}
             />
           )}
         </View>
