@@ -216,11 +216,19 @@ const GamePage = () => {
                   if (backendPlayer) {
                     // This player exists in both lists.
                     if (localPlayer.id === playerId) {
-                      // It's the current user. Preserve local state but take
-                      // authoritative updates from the server (like turn status).
+                      // It's the current user. Preserve local optimistic updates
+                      // for editable fields, but take everything else from the server
+                      // to prevent overwriting authoritative state.
                       return {
-                        ...localPlayer,
-                        turn: backendPlayer.turn,
+                        ...backendPlayer, // Start with server state
+                        name: localPlayer.name,
+                        character: localPlayer.character,
+                        escapePod: localPlayer.escapePod,
+                        location: localPlayer.location,
+                        skillTokens: localPlayer.skillTokens,
+                        journalText: localPlayer.journalText,
+                        statuses: localPlayer.statuses,
+                        impactDiceSlots: localPlayer.impactDiceSlots,
                       };
                     }
                     // It's another player. Use the server's version.
@@ -286,6 +294,22 @@ const GamePage = () => {
       setViewedPlayer(playerInfo[0]);
     }
   }, [playerInfo, viewedPlayer]);
+
+  const playerWasInGame = useRef(false);
+
+  useEffect(() => {
+    const playerInGame = playerInfo.some(p => p.id === playerId);
+
+    // If the player list is not empty and the player is in the list, mark that they've been in the game.
+    if (!playerWasInGame.current && playerInGame) {
+      playerWasInGame.current = true;
+    }
+
+    // If the player was in the game but is no longer in the list, navigate home.
+    if (playerWasInGame.current && !playerInGame) {
+      (navigation as any).navigate('Home');
+    }
+  }, [playerInfo, playerId, navigation]);
 
   // Debounced dice update so rapid clicks don't crash the app
   const debouncedUpdateDice = useRef(
