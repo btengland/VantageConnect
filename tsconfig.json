@@ -1,0 +1,10 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

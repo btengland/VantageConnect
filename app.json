@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "RemoteVantage",
+    "slug": "remotevantage",
+    "plugins": [
+      "expo-font"
+    ],
+    "android": {
+      "package": "com.anonymous.remotevantage"
+    }
+  }
+}
