@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
+import { debounce } from 'lodash';
 import { Picker } from '@react-native-picker/picker';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
@@ -59,9 +60,36 @@ function PlayerCard({
   const [isLoading, setIsLoading] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const isEditable = currentPlayerId === player.id;
+  // Local state for text inputs
+  const [name, setName] = useState(player.name);
+  const [location, setLocation] = useState(player.location);
+  const [journalText, setJournalText] = useState(player.journalText);
+  const focusedInputRef = useRef<string | null>(null);
+
+  // Debounced update function
+  const debouncedUpdatePlayer = useCallback(
+    debounce((updates: Partial<Player>) => {
+      onUpdatePlayer(updates);
+    }, 500),
+    [onUpdatePlayer],
+  );
+
+  // Sync props with local state, avoiding updates to focused inputs
+  useEffect(() => {
+    if (focusedInputRef.current !== 'name') {
+      setName(player.name);
+    }
+    if (focusedInputRef.current !== 'location') {
+      setLocation(player.location);
+    }
+    if (focusedInputRef.current !== 'journalText') {
+      setJournalText(player.journalText);
+    }
+  }, [player.name, player.location, player.journalText]);
 
   useEffect(() => {
-    Animated.loop(
+    // Only start the animation once on mount
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1,
@@ -76,7 +104,9 @@ function PlayerCard({
           useNativeDriver: false,
         }),
       ]),
-    ).start();
+    );
+    animation.start();
+    return () => animation.stop();
   }, [pulseAnim]);
 
   const updatePlayer = (updates: Partial<Player>) => {
@@ -190,10 +220,15 @@ function PlayerCard({
             </CustomText>
             <TextInput
               style={styles.value}
-              value={player.name}
+              value={name}
               placeholder="Enter your name"
               editable={isEditable}
-              onChangeText={text => updatePlayer({ name: text })}
+              onChangeText={text => {
+                setName(text);
+                debouncedUpdatePlayer({ name: text });
+              }}
+              onFocus={() => (focusedInputRef.current = 'name')}
+              onBlur={() => (focusedInputRef.current = null)}
             />
           </View>
 
@@ -279,9 +314,14 @@ function PlayerCard({
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.locationInput, { color: lighterBg }]}
-                value={player.location}
+                value={location}
                 editable={isEditable}
-                onChangeText={text => updatePlayer({ location: text })}
+                onChangeText={text => {
+                  setLocation(text);
+                  debouncedUpdatePlayer({ location: text });
+                }}
+                onFocus={() => (focusedInputRef.current = 'location')}
+                onBlur={() => (focusedInputRef.current = null)}
               />
             </Animated.View>
           </View>
@@ -372,10 +412,15 @@ function PlayerCard({
             <TextInput
               style={styles.journalInput}
               multiline
-              value={player.journalText}
+              value={journalText}
               placeholder="Write your notes here..."
               editable={isEditable}
-              onChangeText={text => updatePlayer({ journalText: text })}
+              onChangeText={text => {
+                setJournalText(text);
+                debouncedUpdatePlayer({ journalText: text });
+              }}
+              onFocus={() => (focusedInputRef.current = 'journalText')}
+              onBlur={() => (focusedInputRef.current = null)}
             />
           </View>
         </ScrollView>
@@ -548,4 +593,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PlayerCard;
+export default React.memo(PlayerCard);
