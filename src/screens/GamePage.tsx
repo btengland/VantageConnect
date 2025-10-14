@@ -74,6 +74,15 @@ const GamePage = () => {
   const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
   const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
   const playerInfoRef = useRef(playerInfo);
+  const focusedInputRef = useRef<string | null>(null);
+
+  const handleFocus = (fieldId: string) => {
+    focusedInputRef.current = fieldId;
+  };
+
+  const handleBlur = () => {
+    focusedInputRef.current = null;
+  };
 
   const setPlayerInfoWithRef = useCallback(
     (newState: Player[] | ((prevState: Player[]) => Player[])) => {
@@ -216,12 +225,28 @@ const GamePage = () => {
                   if (backendPlayer) {
                     // This player exists in both lists.
                     if (localPlayer.id === playerId) {
-                      // It's the current user. Preserve local state but take
-                      // authoritative updates from the server (like turn status).
-                      return {
-                        ...localPlayer,
-                        turn: backendPlayer.turn,
+                      const currentlyEditingField = focusedInputRef.current;
+
+                      // It's the current user. Merge server state with local state,
+                      // but preserve the value of the field the user is currently editing
+                      // to prevent their input from being overwritten.
+                      const mergedPlayer = {
+                        ...localPlayer, // Start with local state
+                        ...backendPlayer, // Apply server updates
                       };
+
+                      if (
+                        currentlyEditingField &&
+                        mergedPlayer.hasOwnProperty(currentlyEditingField)
+                      ) {
+                        // If a field is focused, restore its value from the local state
+                        // that existed before the merge.
+                        (mergedPlayer as any)[currentlyEditingField] = (
+                          localPlayer as any
+                        )[currentlyEditingField];
+                      }
+
+                      return mergedPlayer;
                     }
                     // It's another player. Use the server's version.
                     return backendPlayer;
@@ -349,6 +374,8 @@ const GamePage = () => {
               skillTokenIcons={skillTokenIcons}
               onUpdatePlayer={handleUpdatePlayer}
               totalPlayers={playerInfo.length}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
             />
           )}
         </View>

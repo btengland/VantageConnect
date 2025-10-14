@@ -1,11 +1,12 @@
 // wsClient.ts
 import { GameWebSocket } from './websocketApi';
+import { navigationRef } from './navigation';
 
 // Use your WebSocket URL here
 const WS_URL =
   'wss://4gjwhoq0uf.execute-api.us-east-2.amazonaws.com/production';
 
-export const wsClient = new GameWebSocket(WS_URL);
+export const wsClient = new GameWebSocket(WS_URL, navigationRef);
 
 export const connectWebSocket = async () => {
   await wsClient.connect();

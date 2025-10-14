@@ -1,16 +1,20 @@
 import { Alert } from 'react-native';
+import { NavigationProp } from '@react-navigation/native';
 
 export class GameWebSocket {
   private ws: WebSocket | null = null;
   private url: string;
+  private navigation: NavigationProp<any> | null = null;
   private messageHandlers: ((data: any) => void)[] = [];
-  private reconnectTimeout: any = null;
+  private isClosingIntentionally = false;
 
-  constructor(url: string) {
+  constructor(url: string, navigation?: NavigationProp<any>) {
     this.url = url;
+    this.navigation = navigation || null;
   }
 
   connect(): Promise<void> {
+    this.isClosingIntentionally = false; // Reset on new connection
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(this.url);
 
@@ -21,7 +25,7 @@ export class GameWebSocket {
 
       this.ws.onerror = err => {
         console.error('WebSocket error:', err);
-        reject(err);
+        // Don't reject here, let onclose handle navigation
       };
 
       this.ws.onmessage = event => {
@@ -46,9 +50,18 @@ export class GameWebSocket {
 
       this.ws.onclose = () => {
         console.log('WebSocket closed');
+        if (this.isClosingIntentionally) {
+          console.log('Connection closed intentionally.');
+          return;
+        }
 
-        // Attempt to reconnect after short delay
-        this.scheduleReconnect();
+        console.log('Unexpected disconnection. Navigating to Home.');
+        Alert.alert(
+          'Connection Lost',
+          'You have been disconnected from the game.',
+          [{ text: 'OK', onPress: () => this.navigation?.navigate('Home') }],
+          { cancelable: false },
+        );
       };
     });
   }
@@ -99,7 +112,7 @@ export class GameWebSocket {
   }
 
   close() {
-    clearTimeout(this.reconnectTimeout);
+    this.isClosingIntentionally = true;
     this.ws?.close();
     this.ws = null;
     this.messageHandlers = [];
@@ -107,22 +120,5 @@ export class GameWebSocket {
 
   isConnected(): boolean {
     return !!this.ws && this.ws.readyState === WebSocket.OPEN;
-  }
-
-  // --- Auto-reconnect ---
-  private scheduleReconnect() {
-    if (this.reconnectTimeout) return; // Already scheduled
-
-    this.reconnectTimeout = setTimeout(async () => {
-      console.log('Attempting WebSocket reconnect...');
-      try {
-        await this.connect();
-        console.log('Reconnected successfully');
-      } catch (err) {
-        console.error('Reconnect failed, will retry...', err);
-        this.reconnectTimeout = null;
-        this.scheduleReconnect(); // try again
-      }
-    }, 3000); // wait 3 seconds before reconnect
   }
 }

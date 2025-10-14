@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
+import { navigationRef } from './src/navigation';
 import { View, ActivityIndicator } from 'react-native';
 
 import HomePage from './src/screens/HomePage';
@@ -35,7 +36,7 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{ headerShown: false }}
