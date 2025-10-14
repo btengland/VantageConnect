@@ -18,6 +18,7 @@ import {
   onChallengeDiceUpdate,
   readChallengeDice,
   updatePlayer,
+  onWebSocketDisconnect,
 } from '../api';
 
 // Define icons once here, outside the component
@@ -142,6 +143,13 @@ const GamePage = () => {
   useEffect(() => {
     isMyTurnRef.current = isMyTurn;
   }, [isMyTurn]);
+
+  useEffect(() => {
+    onWebSocketDisconnect(() => {
+      console.log('WebSocket disconnected, navigating to Home');
+      (navigation as any).navigate('Home');
+    });
+  }, [navigation]);
 
   useEffect(() => {
     const initWebSocket = async () => {

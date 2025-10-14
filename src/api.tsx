@@ -94,3 +94,7 @@ export const leaveGame = async (playerId: number) => {
   wsClient.sendMessage({ action: 'leaveSession', playerId });
   return await wsClient.once('leaveSession');
 };
+
+export const onWebSocketDisconnect = (callback: () => void) => {
+  wsClient.onDisconnect(callback);
+};

@@ -4,6 +4,7 @@ export class GameWebSocket {
   private ws: WebSocket | null = null;
   private url: string;
   private messageHandlers: ((data: any) => void)[] = [];
+  private disconnectHandlers: (() => void)[] = [];
   private reconnectTimeout: any = null;
 
   constructor(url: string) {
@@ -46,7 +47,7 @@ export class GameWebSocket {
 
       this.ws.onclose = () => {
         console.log('WebSocket closed');
-
+        this.disconnectHandlers.forEach(h => h());
         // Attempt to reconnect after short delay
         this.scheduleReconnect();
       };
@@ -92,6 +93,15 @@ export class GameWebSocket {
 
   onMessage(handler: (data: any) => void) {
     this.messageHandlers.push(handler);
+  }
+
+  onDisconnect(handler: () => void): () => void {
+    this.disconnectHandlers.push(handler);
+    return () => {
+      this.disconnectHandlers = this.disconnectHandlers.filter(
+        h => h !== handler,
+      );
+    };
   }
 
   off(handler: (data: any) => void) {
