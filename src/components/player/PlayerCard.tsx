@@ -32,14 +32,15 @@ function PlayerCard({
   getCharacterColor,
   skillTokenIcons,
   onUpdatePlayer,
+  totalPlayers,
 }: PlayerCardProps) {
   const isEditable = currentPlayerId === player.id;
   const { updatePlayer } = usePlayerStore();
 
-  const [name, setName] = useState(player.name);
-  const [location, setLocation] = useState(player.location);
+  const [name, setName]          = useState(player.name);
+  const [location, setLocation]    = useState(player.location);
   const [journalText, setJournalText] = useState(player.journalText);
-  const focusedInputRef = useRef<string | null>(null);
+  const focusedInputRef         = useRef<string | null>(null);
 
   const debouncedUpdatePlayer = useCallback(
     debounce((updates: Partial<Player>) => {
@@ -74,10 +75,8 @@ function PlayerCard({
         >
           <PlayerHeader
             isEditable={isEditable}
-            name={name}
-            character={player.character}
-            escapePod={player.escapePod}
-            playerNumber={player.playerNumber}
+            player={player}
+            totalPlayers={totalPlayers}
             onNameChange={text => {
               setName(text);
               handleLocalUpdate({ name: text });
