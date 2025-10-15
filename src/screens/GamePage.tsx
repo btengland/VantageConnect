@@ -14,6 +14,7 @@ import {
   connectWebSocket,
   readPlayers,
   onPlayersUpdate,
+  onPlayerUpdate,
   updateChallengeDice,
   onChallengeDiceUpdate,
   readChallengeDice,
@@ -154,6 +155,19 @@ const GamePage = () => {
       disconnectSubscription();
     };
   }, [navigation]);
+
+  // This useEffect handles incremental player updates
+  useEffect(() => {
+    const playerUpdateCleanup = onPlayerUpdate(updatedPlayer => {
+      setPlayerInfoWithRef(prev =>
+        prev.map(p => (p.id === updatedPlayer.id ? updatedPlayer : p)),
+      );
+    });
+
+    return () => {
+      playerUpdateCleanup();
+    };
+  }, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
     let isMounted = true;

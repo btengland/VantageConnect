@@ -61,6 +61,12 @@ export const onPlayersUpdate = (callback: (data: any) => void) => {
   });
 };
 
+export const onPlayerUpdate = (callback: (player: any) => void) => {
+  return on('playerUpdated', data => {
+    callback(data.player);
+  });
+};
+
 export const readChallengeDice = (sessionCode: number) => {
   wsClient.sendMessage({ action: 'readChallengeDice', gameId: sessionCode });
 };
