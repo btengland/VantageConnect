@@ -14,6 +14,7 @@ import {
   connectWebSocket,
   readPlayers,
   onPlayersUpdate,
+  onPlayerUpdate,
   updateChallengeDice,
   onChallengeDiceUpdate,
   readChallengeDice,
@@ -145,13 +146,23 @@ const GamePage = () => {
   }, [isMyTurn]);
 
   useEffect(() => {
-    onWebSocketDisconnect(() => {
+    const disconnectSubscription = onWebSocketDisconnect(() => {
       console.log('WebSocket disconnected, navigating to Home');
       (navigation as any).navigate('Home');
     });
-  }, [navigation]);
+
+    // Cleanup on unmount
+    return () => {
+      disconnectSubscription();
+      debouncedUpdatePlayer.cancel();
+    };
+  }, [navigation, debouncedUpdatePlayer]);
 
   useEffect(() => {
+    let challengeDiceSubscription: () => void;
+    let playersUpdateSubscription: () => void;
+    let playerUpdateSubscription: () => void;
+
     const initWebSocket = async () => {
       try {
         // 1️⃣ Connect WS
@@ -159,12 +170,12 @@ const GamePage = () => {
         console.log('WebSocket connected');
 
         // 2️⃣ Set up listeners
-        onChallengeDiceUpdate(newDice => {
+        challengeDiceSubscription = onChallengeDiceUpdate(newDice => {
           if (isMyTurnRef.current) return; // ignore updates if it's my turn
           setChallengeDice(newDice);
         });
 
-        onPlayersUpdate(
+        playersUpdateSubscription = onPlayersUpdate(
           (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
             const playersFromBackend = gameData.players;
 
@@ -177,15 +188,24 @@ const GamePage = () => {
             const transformedBackendPlayers = playersFromBackend.map(
               (p: BackendPlayer): Player => {
                 const defaultSkillTokens = Array(6).fill({ quantity: 0 });
-                // The backend sometimes sends an object instead of an array
-                const skillTokens =
+                let skillTokens =
                   p.skillTokens && !Array.isArray(p.skillTokens)
                     ? Object.values(p.skillTokens)
-                    : p.skillTokens || defaultSkillTokens;
+                    : p.skillTokens;
+
+                if (!skillTokens || skillTokens.length < 6) {
+                  skillTokens = [
+                    ...(skillTokens || []),
+                    ...Array(6 - (skillTokens?.length || 0)).fill({
+                      quantity: 0,
+                    }),
+                  ];
+                }
+
                 const impactDiceSlots =
                   p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
                     ? Object.values(p.impactDiceSlots)
-                    : p.impactDiceSlots || [];
+                    : p.impactDiceSlots;
 
                 return {
                   id: p.playerId,
@@ -195,15 +215,16 @@ const GamePage = () => {
                   character: p.character || '',
                   escapePod: p.escapePod || '',
                   location: p.location || '',
-                  skillTokens,
+                  skillTokens: [...(skillTokens || [])],
                   turn: p.turn || false,
                   journalText: p.journalText || '',
-                  statuses: p.statuses || {
-                    heart: 0,
-                    star: 0,
-                    'timer-sand-full': 0,
-                  },
-                  impactDiceSlots,
+                  statuses:
+                    p.statuses || {
+                      heart: 0,
+                      star: 0,
+                      'timer-sand-full': 0,
+                    },
+                  impactDiceSlots: [...(impactDiceSlots || [])],
                 };
               },
             );
@@ -222,24 +243,18 @@ const GamePage = () => {
                 .map(localPlayer => {
                   const backendPlayer = backendPlayersMap.get(localPlayer.id);
                   if (backendPlayer) {
-                    // This player exists in both lists.
                     if (localPlayer.id === playerId) {
-                      // It's the current user. Preserve local state but take
-                      // authoritative updates from the server (like turn status).
                       return {
                         ...localPlayer,
                         turn: backendPlayer.turn,
                       };
                     }
-                    // It's another player. Use the server's version.
                     return backendPlayer;
                   }
-                  // This player is not in the backend list; they must have left.
                   return null;
                 })
                 .filter((p): p is Player => p !== null);
 
-              // Add any new players who are in the backend list but not local.
               const currentIds = new Set(mergedPlayers.map(p => p.id));
               transformedBackendPlayers.forEach(backendPlayer => {
                 if (!currentIds.has(backendPlayer.id)) {
@@ -258,6 +273,22 @@ const GamePage = () => {
           },
         );
 
+        playerUpdateSubscription = onPlayerUpdate(
+          (playerData: { player: BackendPlayer }) => {
+            const updatedPlayer = playerData.player;
+            // Cancel any pending debounced updates for this player
+            // to prevent overwriting server state with stale local state.
+            debouncedUpdatePlayer.cancel();
+            setPlayerInfoWithRef(prev =>
+              prev.map(p =>
+                p.id === updatedPlayer.playerId
+                  ? { ...p, ...updatedPlayer }
+                  : p,
+              ),
+            );
+          },
+        );
+
         // 3️⃣ Initial data fetch
         readPlayers(sessionCode);
         readChallengeDice(sessionCode);
@@ -268,6 +299,13 @@ const GamePage = () => {
     };
 
     initWebSocket();
+
+    // Cleanup function
+    return () => {
+      challengeDiceSubscription?.();
+      playersUpdateSubscription?.();
+      playerUpdateSubscription?.();
+    };
   }, [playerId, sessionCode]);
 
   useEffect(() => {
