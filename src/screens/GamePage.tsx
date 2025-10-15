@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from '../components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
-import PlayerCard from '../components/PlayerCard';
+import PlayerCard from '../components/player/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from '../components/CustomText';
 import { getCharacterColor } from '../utils';
