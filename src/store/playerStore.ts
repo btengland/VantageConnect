@@ -24,7 +24,8 @@ interface PlayerState {
   playerInfo: Player[];
   viewedPlayerId: number | null;
   setViewedPlayerId: (id: number) => void;
-  setPlayerInfo: (players: Player[]) => void;
+  initializePlayers: (players: Player[], localPlayerId: number) => void;
+  mergePlayerUpdates: (players: Player[], localPlayerId: number) => void;
   updatePlayer: (playerId: number, updates: Partial<Player>) => void;
 }
 
@@ -40,21 +41,47 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setViewedPlayerId: id => set({ viewedPlayerId: id }),
 
-  setPlayerInfo: players => {
+  initializePlayers: (players, localPlayerId) => {
+    set({
+      playerInfo: rotatePlayers(players, localPlayerId),
+      viewedPlayerId: localPlayerId,
+    });
+  },
+
+  mergePlayerUpdates: (playersFromBackend, localPlayerId) => {
     set(state => {
-      const currentPlayerId = players.find(p => p.turn)?.id; // Heuristic to find current player
-      const rotatedPlayers = currentPlayerId
-        ? rotatePlayers(players, currentPlayerId)
-        : players;
+      const backendPlayersMap = new Map(playersFromBackend.map(p => [p.id, p]));
+      const localPlayersMap = new Map(state.playerInfo.map(p => [p.id, p]));
 
-      // Set initial viewed player if not set
-      const viewedPlayerId =
-        state.viewedPlayerId ?? (rotatedPlayers[0]?.id || null);
+      // Merge backend updates into local state
+      const mergedPlayers = state.playerInfo
+        .map(localPlayer => {
+          const backendPlayer = backendPlayersMap.get(localPlayer.id);
+          if (!backendPlayer) return null; // Player left
 
-      if (isEqual(state.playerInfo, rotatedPlayers)) {
-        return { playerInfo: state.playerInfo, viewedPlayerId };
+          if (localPlayer.id === localPlayerId) {
+            // For the local user, only accept authoritative updates (like turn status)
+            return { ...localPlayer, turn: backendPlayer.turn };
+          }
+          // For other players, accept the full backend state
+          return backendPlayer;
+        })
+        .filter((p): p is Player => p !== null);
+
+      // Add new players
+      playersFromBackend.forEach(backendPlayer => {
+        if (!localPlayersMap.has(backendPlayer.id)) {
+          mergedPlayers.push(backendPlayer);
+        }
+      });
+
+      const newPlayerOrder = rotatePlayers(mergedPlayers, localPlayerId);
+
+      if (isEqual(state.playerInfo, newPlayerOrder)) {
+        return { playerInfo: state.playerInfo };
       }
-      return { playerInfo: rotatedPlayers, viewedPlayerId };
+
+      return { playerInfo: newPlayerOrder };
     });
   },
 

@@ -57,7 +57,8 @@ const GamePage = () => {
   const {
     playerInfo,
     viewedPlayerId,
-    setPlayerInfo,
+    initializePlayers,
+    mergePlayerUpdates,
     setViewedPlayerId,
     updatePlayer,
   } = usePlayerStore();
@@ -147,13 +148,17 @@ const GamePage = () => {
           }),
         );
 
-        setPlayerInfo(transformedPlayers);
+        if (usePlayerStore.getState().playerInfo.length === 0) {
+          initializePlayers(transformedPlayers, playerId);
+        } else {
+          mergePlayerUpdates(transformedPlayers, playerId);
+        }
         if (loading) setLoading(false);
       },
       500,
       { leading: true, trailing: true },
     ),
-    [setPlayerInfo, loading],
+    [initializePlayers, mergePlayerUpdates, playerId, loading],
   );
 
   useEffect(() => {
