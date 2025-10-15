@@ -145,29 +145,29 @@ const GamePage = () => {
   }, [isMyTurn]);
 
   useEffect(() => {
-    onWebSocketDisconnect(() => {
-      console.log('WebSocket disconnected, navigating to Home');
-      (navigation as any).navigate('Home');
-    });
-  }, [navigation]);
-
-  useEffect(() => {
+    const subscriptions: (() => void)[] = [];
     const initWebSocket = async () => {
       try {
         // 1️⃣ Connect WS
         await connectWebSocket();
         console.log('WebSocket connected');
 
-        // 2️⃣ Set up listeners
-        onChallengeDiceUpdate(newDice => {
-          if (isMyTurnRef.current) return; // ignore updates if it's my turn
-          setChallengeDice(newDice);
-        });
+        // 2️⃣ Set up listeners and store their cleanup functions
+        subscriptions.push(
+          onChallengeDiceUpdate(newDice => {
+            if (isMyTurnRef.current) return; // ignore updates if it's my turn
+            setChallengeDice(newDice);
+          }),
+        );
 
-        onPlayersUpdate(
-          (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
-            try {
-              if (!gameData || !Array.isArray(gameData.players)) {
+        subscriptions.push(
+          onPlayersUpdate(
+            (gameData: {
+              players: BackendPlayer[];
+              challengeDice: number;
+            }) => {
+              try {
+                if (!gameData || !Array.isArray(gameData.players)) {
                 console.error(
                   'Invalid gameData received from backend:',
                   gameData,
@@ -283,12 +283,18 @@ const GamePage = () => {
             } catch (error) {
               console.error('Error processing player update:', error);
             }
-          },
+          }),
         );
 
         // 3️⃣ Initial data fetch
         readPlayers(sessionCode);
         readChallengeDice(sessionCode);
+        subscriptions.push(
+          onWebSocketDisconnect(() => {
+            console.log('WebSocket disconnected, navigating to Home');
+            (navigation as any).navigate('Home');
+          }),
+        );
       } catch (err) {
         console.error('WebSocket connection failed:', err);
         setLoading(false);
@@ -296,7 +302,13 @@ const GamePage = () => {
     };
 
     initWebSocket();
-  }, [playerId, sessionCode]);
+
+    // Return a cleanup function
+    return () => {
+      console.log('Cleaning up WebSocket subscriptions');
+      subscriptions.forEach(unsubscribe => unsubscribe());
+    };
+  }, [playerId, sessionCode, navigation]);
 
   useEffect(() => {
     // Keep viewedPlayer in sync with playerInfo
