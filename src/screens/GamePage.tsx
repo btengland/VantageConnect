@@ -106,13 +106,6 @@ const GamePage = () => {
     isMyTurnRef.current = isMyTurn;
   }, [isMyTurn]);
 
-  useEffect(() => {
-    onWebSocketDisconnect(() => {
-      console.log('WebSocket disconnected, navigating to Home');
-      (navigation as any).navigate('Home');
-    });
-  }, [navigation]);
-
   const throttledOnPlayersUpdate = useCallback(
     throttle(
       (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
@@ -162,14 +155,26 @@ const GamePage = () => {
   );
 
   useEffect(() => {
+    let disconnectListener: (() => void) | undefined;
+    let challengeDiceListener: (() => void) | undefined;
+    let playersListener: (() => void) | undefined;
+
     const initWebSocket = async () => {
       try {
         await connectWebSocket();
         console.log('WebSocket connected');
-        onChallengeDiceUpdate(newDice => {
+
+        challengeDiceListener = onChallengeDiceUpdate(newDice => {
           if (!isMyTurnRef.current) setChallengeDice(newDice);
         });
-        onPlayersUpdate(throttledOnPlayersUpdate);
+
+        playersListener = onPlayersUpdate(throttledOnPlayersUpdate);
+
+        disconnectListener = onWebSocketDisconnect(() => {
+          console.log('WebSocket disconnected, navigating to Home');
+          (navigation as any).navigate('Home');
+        });
+
         readPlayers(sessionCode);
         readChallengeDice(sessionCode);
       } catch (err) {
@@ -177,8 +182,15 @@ const GamePage = () => {
         setLoading(false);
       }
     };
+
     initWebSocket();
-  }, [sessionCode, throttledOnPlayersUpdate]);
+
+    return () => {
+      if (disconnectListener) disconnectListener();
+      if (challengeDiceListener) challengeDiceListener();
+      if (playersListener) playersListener();
+    };
+  }, [sessionCode, throttledOnPlayersUpdate, navigation]);
 
   const debouncedUpdateDice = useRef(
     debounce((val: number) => updateChallengeDice(sessionCode, val), 300),

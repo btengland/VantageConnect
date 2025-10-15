@@ -44,14 +44,25 @@ const on = (action: string, callback: (data: any) => void) => {
   messageCallbacks[action].push(callback);
 };
 
+// Function to unregister a callback for a specific action
+const off = (action: string, callback: (data: any) => void) => {
+  if (messageCallbacks[action]) {
+    messageCallbacks[action] = messageCallbacks[action].filter(
+      cb => cb !== callback,
+    );
+  }
+};
+
 export const readPlayers = (sessionCode: number) => {
   wsClient.sendMessage({ action: 'readPlayers', sessionCode });
 };
 
 export const onPlayersUpdate = (callback: (data: any) => void) => {
-  on('updatePlayers', data => {
-    callback(data); // send the whole object { players, challengeDice, code }
-  });
+  const handler = (data: any) => {
+    callback(data);
+  };
+  on('updatePlayers', handler);
+  return () => off('updatePlayers', handler);
 };
 
 export const readChallengeDice = (sessionCode: number) => {
@@ -70,7 +81,6 @@ export const endTurn = async (
   sessionCode: number,
   currentPlayerId: number,
 ): Promise<void> => {
-  // send to API Gateway WebSocket
   wsClient.sendMessage({ action: 'endTurn', sessionCode, currentPlayerId });
 };
 
@@ -83,11 +93,13 @@ export const updateChallengeDice = (sessionCode: number, value: number) => {
 };
 
 export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
-  on('updateChallengeDice', data => {
+  const handler = (data: any) => {
     if (data.challengeDice !== undefined) {
       callback(data.challengeDice);
     }
-  });
+  };
+  on('updateChallengeDice', handler);
+  return () => off('updateChallengeDice', handler);
 };
 
 export const leaveGame = async (playerId: number) => {
@@ -97,4 +109,6 @@ export const leaveGame = async (playerId: number) => {
 
 export const onWebSocketDisconnect = (callback: () => void) => {
   wsClient.onDisconnect(callback);
+  // Assuming wsClient.onDisconnect returns a function to unsubscribe
+  // If not, the GameWebSocket class needs to be modified to support this
 };
