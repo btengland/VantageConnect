@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { debounce, isEqual, throttle } from 'lodash';
+import { debounce, throttle } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import ExitModal from '../components/ExitModal';
@@ -17,9 +17,10 @@ import {
   updateChallengeDice,
   onChallengeDiceUpdate,
   readChallengeDice,
-  updatePlayer,
+  updatePlayer as apiUpdatePlayer,
   onWebSocketDisconnect,
 } from '../api';
+import { usePlayerStore, Player } from '../store/playerStore';
 
 // Define icons once here, outside the component
 const skillTokenIcons = [
@@ -31,21 +32,19 @@ const skillTokenIcons = [
   require('../assets/Overpower.png'),
 ];
 
-type SkillToken = { quantity: number };
-type Statuses = { heart: number; star: number; 'timer-sand-full': number };
-export type Player = {
-  id: number;
+type BackendPlayer = {
+  playerId: number;
   sessionCode: number;
-  playerNumber: number;
-  name: string;
-  character: string;
-  escapePod: string;
-  location: string;
-  skillTokens: SkillToken[];
-  turn: boolean;
-  journalText: string;
-  statuses: Statuses;
-  impactDiceSlots: any[];
+  playerNumber?: number;
+  name?: string;
+  character?: string;
+  escapePod?: string;
+  location?: string;
+  skillTokens?: any;
+  turn?: boolean;
+  journalText?: string;
+  statuses?: any;
+  impactDiceSlots?: any;
 };
 
 const GamePage = () => {
@@ -55,44 +54,19 @@ const GamePage = () => {
     sessionCode: number;
   };
 
-  type BackendPlayer = {
-    playerId: number;
-    sessionCode: number;
-    playerNumber?: number;
-    name?: string;
-    character?: string;
-    escapePod?: string;
-    location?: string;
-    skillTokens?: SkillToken[];
-    turn?: boolean;
-    journalText?: string;
-    statuses?: Statuses;
-    impactDiceSlots?: any[];
-  };
+  const {
+    playerInfo,
+    viewedPlayerId,
+    setPlayerInfo,
+    setViewedPlayerId,
+    updatePlayer,
+  } = usePlayerStore();
 
   const [isOpen, setOpen] = useState(false);
   const [challengeDice, setChallengeDice] = useState(0);
-  const [viewedPlayer, setViewedPlayer] = useState<Player | null>(null);
-  const [playerInfo, setPlayerInfo] = useState<Player[]>([]);
-  const playerInfoRef = useRef(playerInfo);
-
-  const setPlayerInfoWithRef = useCallback(
-    (newState: Player[] | ((prevState: Player[]) => Player[])) => {
-      const newPlayerInfo =
-        typeof newState === 'function'
-          ? newState(playerInfoRef.current)
-          : newState;
-      playerInfoRef.current = newPlayerInfo;
-      setPlayerInfo(newPlayerInfo);
-    },
-    [],
-  );
   const [loading, setLoading] = useState(true);
-
   const challengeDiceInitialized = useRef(false);
-
   const isDarkMode = useColorScheme() === 'dark';
-
   const navigation = useNavigation();
 
   const toggleModal = (navigate?: boolean) => {
@@ -102,44 +76,31 @@ const GamePage = () => {
     setOpen(!isOpen);
   };
 
-  const debouncedUpdatePlayer = useRef(
+  const debouncedApiUpdatePlayer = useRef(
     debounce((player: Player) => {
-      updatePlayer(player);
-    }, 300), // 300ms delay
+      apiUpdatePlayer(player);
+    }, 300),
   ).current;
 
   const handleUpdatePlayer = useCallback(
     (updates: Partial<Player>) => {
-      let fullPlayer: Player | undefined;
-      setPlayerInfoWithRef(prev =>
-        prev.map(p => {
-          if (p.id === playerId) {
-            const updatedPlayer = { ...p, ...updates };
-            fullPlayer = updatedPlayer;
-            return updatedPlayer;
-          }
-          return p;
-        }),
-      );
+      // Immediately update the local store for responsiveness
+      updatePlayer(playerId, updates);
 
-      if (fullPlayer) {
-        debouncedUpdatePlayer(fullPlayer);
+      // Then, debounce the API call
+      const updatedPlayer = usePlayerStore
+        .getState()
+        .playerInfo.find(p => p.id === playerId);
+      if (updatedPlayer) {
+        debouncedApiUpdatePlayer(updatedPlayer);
       }
     },
-    [playerId, setPlayerInfoWithRef, debouncedUpdatePlayer],
+    [playerId, updatePlayer, debouncedApiUpdatePlayer],
   );
-
-  const rotatePlayers = (players: Player[], currentPlayerId: number) => {
-    const index = players.findIndex(p => p.id === currentPlayerId);
-    if (index === -1) return players;
-
-    return [...players.slice(index), ...players.slice(0, index)];
-  };
 
   const myPlayer = playerInfo.find(p => p.id === playerId);
   const isMyTurn = myPlayer?.turn ?? false;
-
-  const isMyTurnRef = useRef(false);
+  const isMyTurnRef = useRef(isMyTurn);
   useEffect(() => {
     isMyTurnRef.current = isMyTurn;
   }, [isMyTurn]);
@@ -154,89 +115,45 @@ const GamePage = () => {
   const throttledOnPlayersUpdate = useCallback(
     throttle(
       (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
-        const playersFromBackend = gameData.players;
-
         if (!challengeDiceInitialized.current) {
           setChallengeDice(gameData.challengeDice);
           challengeDiceInitialized.current = true;
         }
 
-        const transformedBackendPlayers = playersFromBackend.map(
-          (p: BackendPlayer): Player => {
-            const defaultSkillTokens = Array(6).fill({ quantity: 0 });
-            const skillTokens =
+        const transformedPlayers = gameData.players.map(
+          (p: BackendPlayer): Player => ({
+            id: p.playerId,
+            sessionCode: p.sessionCode,
+            playerNumber: Number(p.playerNumber) || 0,
+            name: p.name || '',
+            character: p.character || '',
+            escapePod: p.escapePod || '',
+            location: p.location || '',
+            skillTokens:
               p.skillTokens && !Array.isArray(p.skillTokens)
                 ? Object.values(p.skillTokens)
-                : p.skillTokens || defaultSkillTokens;
-            const impactDiceSlots =
+                : p.skillTokens || Array(6).fill({ quantity: 0 }),
+            turn: p.turn || false,
+            journalText: p.journalText || '',
+            statuses: p.statuses || {
+              heart: 0,
+              star: 0,
+              'timer-sand-full': 0,
+            },
+            impactDiceSlots:
               p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
                 ? Object.values(p.impactDiceSlots)
-                : p.impactDiceSlots || [];
-
-            return {
-              id: p.playerId,
-              sessionCode: p.sessionCode,
-              playerNumber: Number(p.playerNumber) || 0,
-              name: p.name || '',
-              character: p.character || '',
-              escapePod: p.escapePod || '',
-              location: p.location || '',
-              skillTokens,
-              turn: p.turn || false,
-              journalText: p.journalText || '',
-              statuses: p.statuses || {
-                heart: 0,
-                star: 0,
-                'timer-sand-full': 0,
-              },
-              impactDiceSlots,
-            };
-          },
+                : p.impactDiceSlots || [],
+          }),
         );
 
-        setPlayerInfoWithRef(prevPlayerInfo => {
-          if (prevPlayerInfo.length === 0) {
-            setLoading(false);
-            return rotatePlayers(transformedBackendPlayers, playerId);
-          }
-
-          const backendPlayersMap = new Map(
-            transformedBackendPlayers.map(p => [p.id, p]),
-          );
-
-          const mergedPlayers = prevPlayerInfo
-            .map(localPlayer => {
-              const backendPlayer = backendPlayersMap.get(localPlayer.id);
-              if (backendPlayer) {
-                if (localPlayer.id === playerId) {
-                  return { ...localPlayer, turn: backendPlayer.turn };
-                }
-                return backendPlayer;
-              }
-              return null;
-            })
-            .filter((p): p is Player => p !== null);
-
-          const currentIds = new Set(mergedPlayers.map(p => p.id));
-          transformedBackendPlayers.forEach(backendPlayer => {
-            if (!currentIds.has(backendPlayer.id)) {
-              mergedPlayers.push(backendPlayer);
-            }
-          });
-
-          const newPlayerOrder = rotatePlayers(mergedPlayers, playerId);
-
-          if (isEqual(newPlayerOrder, prevPlayerInfo)) {
-            return prevPlayerInfo;
-          }
-
-          return newPlayerOrder;
-        });
+        setPlayerInfo(transformedPlayers);
+        if (loading) setLoading(false);
       },
       500,
       { leading: true, trailing: true },
     ),
-    [playerId, setPlayerInfoWithRef],
+    [setPlayerInfo, loading],
   );
 
   useEffect(() => {
@@ -244,14 +161,10 @@ const GamePage = () => {
       try {
         await connectWebSocket();
         console.log('WebSocket connected');
-
         onChallengeDiceUpdate(newDice => {
-          if (isMyTurnRef.current) return;
-          setChallengeDice(newDice);
+          if (!isMyTurnRef.current) setChallengeDice(newDice);
         });
-
         onPlayersUpdate(throttledOnPlayersUpdate);
-
         readPlayers(sessionCode);
         readChallengeDice(sessionCode);
       } catch (err) {
@@ -259,39 +172,11 @@ const GamePage = () => {
         setLoading(false);
       }
     };
-
     initWebSocket();
-  }, [playerId, sessionCode, throttledOnPlayersUpdate]);
+  }, [sessionCode, throttledOnPlayersUpdate]);
 
-  useEffect(() => {
-    setViewedPlayer(currentViewedPlayer => {
-      if (playerInfo.length === 0) {
-        return null;
-      }
-
-      const viewedPlayerExists = playerInfo.some(
-        p => p.id === currentViewedPlayer?.id,
-      );
-
-      if (viewedPlayerExists) {
-        const updatedViewedPlayer = playerInfo.find(
-          p => p.id === currentViewedPlayer!.id,
-        )!;
-        if (!isEqual(updatedViewedPlayer, currentViewedPlayer)) {
-          return updatedViewedPlayer;
-        }
-        return currentViewedPlayer;
-      } else {
-        return playerInfo[0];
-      }
-    });
-  }, [playerInfo]);
-
-  // Debounced dice update so rapid clicks don't crash the app
   const debouncedUpdateDice = useRef(
-    debounce((val: number) => {
-      updateChallengeDice(sessionCode, val);
-    }, 300), // 300ms delay
+    debounce((val: number) => updateChallengeDice(sessionCode, val), 300),
   ).current;
 
   const handleDiceChange = useCallback(
@@ -305,7 +190,9 @@ const GamePage = () => {
     [debouncedUpdateDice],
   );
 
-  if (loading) {
+  const viewedPlayer = playerInfo.find(p => p.id === viewedPlayerId);
+
+  if (loading && playerInfo.length === 0) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#025472" />
@@ -317,32 +204,28 @@ const GamePage = () => {
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-
       <View style={styles.main}>
-        {/* Close button top-right */}
         <Pressable
           onPress={() => toggleModal(false)}
           style={styles.closeButton}
         >
           <CustomText style={styles.closeButtonText}>X</CustomText>
         </Pressable>
-
         <GameHeader
           sessionCode={sessionCode}
           challengeDice={challengeDice}
           isMyTurn={isMyTurn}
           onDiceChange={handleDiceChange}
         />
-
         <View style={styles.contentContainer}>
           <PlayerBubbles
             players={playerInfo}
-            viewedPlayer={viewedPlayer}
-            onSetViewedPlayer={setViewedPlayer}
+            viewedPlayerId={viewedPlayerId}
+            onSetViewedPlayer={setViewedPlayerId}
           />
-
           {viewedPlayer && (
             <PlayerCard
+              key={viewedPlayer.id} // Add key for re-mounting on player change
               currentPlayerId={playerId}
               player={viewedPlayer}
               getCharacterColor={getCharacterColor}
@@ -353,7 +236,6 @@ const GamePage = () => {
           )}
         </View>
       </View>
-
       <ExitModal
         playerId={playerId}
         isOpen={isOpen}
@@ -375,9 +257,6 @@ const styles = StyleSheet.create({
   main: {
     flex: 1,
   },
-  mainText: {
-    fontSize: 24,
-  },
   contentContainer: {
     flex: 1,
     flexDirection: 'column',
@@ -393,20 +272,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 200,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
   },
   closeButtonText: {
     color: 'white',
     fontSize: 20,
     lineHeight: 20,
-  },
-  sessionCode: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
   },
   loaderContainer: {
     flex: 1,

@@ -19,25 +19,7 @@ import PlayerHeader from './PlayerHeader';
 import PlayerLocation from './PlayerLocation';
 import PlayerImpactDice from './PlayerImpactDice';
 import PlayerJournal from './PlayerJournal';
-
-// Type definitions - assuming these are consistent with GamePage
-type SkillToken = { quantity: number };
-type ImpactDiceSlot = { symbol: string; checked: boolean };
-type Statuses = { heart: number; star: number; 'timer-sand-full': number };
-type Player = {
-  id: number;
-  sessionCode: number;
-  name: string;
-  playerNumber: number;
-  character: string;
-  escapePod: string;
-  location: string;
-  skillTokens: SkillToken[];
-  turn: boolean;
-  journalText: string;
-  statuses: Statuses;
-  impactDiceSlots: ImpactDiceSlot[];
-};
+import { usePlayerStore, Player } from '../../store/playerStore';
 
 type PlayerCardProps = {
   currentPlayerId: number;
@@ -58,6 +40,7 @@ function PlayerCard({
 }: PlayerCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const isEditable = currentPlayerId === player.id;
+  const { updatePlayer } = usePlayerStore();
 
   // Local state for text inputs to avoid re-renders on every keystroke
   const [name, setName] = useState(player.name);
@@ -68,7 +51,7 @@ function PlayerCard({
   // Debounced update function
   const debouncedUpdatePlayer = useCallback(
     debounce((updates: Partial<Player>) => {
-      onUpdatePlayer(updates);
+      onUpdatePlayer(updates); // This will call the API
     }, 500),
     [onUpdatePlayer],
   );
@@ -81,8 +64,11 @@ function PlayerCard({
       setJournalText(player.journalText);
   }, [player.name, player.location, player.journalText]);
 
-  const updatePlayer = (updates: Partial<Player>) => {
-    onUpdatePlayer(updates);
+  const handleLocalUpdate = (updates: Partial<Player>) => {
+    // Update the store immediately for UI responsiveness
+    updatePlayer(player.id, updates);
+    // Debounce the API call
+    debouncedUpdatePlayer(updates);
   };
 
   // Reset loading state when it becomes this player's turn again
@@ -121,10 +107,10 @@ function PlayerCard({
             playerNumber={player.playerNumber}
             onNameChange={text => {
               setName(text);
-              debouncedUpdatePlayer({ name: text });
+              handleLocalUpdate({ name: text });
             }}
-            onCharacterChange={val => updatePlayer({ character: val })}
-            onEscapePodChange={val => updatePlayer({ escapePod: val })}
+            onCharacterChange={val => handleLocalUpdate({ character: val })}
+            onEscapePodChange={val => handleLocalUpdate({ escapePod: val })}
             onFocus={field => (focusedInputRef.current = field)}
             onBlur={() => (focusedInputRef.current = null)}
           />
@@ -167,7 +153,7 @@ function PlayerCard({
             lighterBg={lighterBg}
             onLocationChange={text => {
               setLocation(text);
-              debouncedUpdatePlayer({ location: text });
+              handleLocalUpdate({ location: text });
             }}
             onFocus={field => (focusedInputRef.current = field)}
             onBlur={() => (focusedInputRef.current = null)}
@@ -177,19 +163,19 @@ function PlayerCard({
             skillTokens={player.skillTokens}
             skillTokenIcons={skillTokenIcons}
             isEditable={isEditable}
-            onUpdate={newTokens => updatePlayer({ skillTokens: newTokens })}
+            onUpdate={newTokens => handleLocalUpdate({ skillTokens: newTokens })}
           />
 
           <PlayerImpactDice
             isEditable={isEditable}
             impactDiceSlots={player.impactDiceSlots}
-            onUpdate={newSlots => updatePlayer({ impactDiceSlots: newSlots })}
+            onUpdate={newSlots => handleLocalUpdate({ impactDiceSlots: newSlots })}
           />
 
           <StatusUpdates
             statuses={player.statuses}
             isEditable={isEditable}
-            onUpdate={newStatuses => updatePlayer({ statuses: newStatuses })}
+            onUpdate={newStatuses => handleLocalUpdate({ statuses: newStatuses })}
           />
 
           <PlayerJournal
@@ -197,7 +183,7 @@ function PlayerCard({
             journalText={journalText}
             onJournalChange={text => {
               setJournalText(text);
-              debouncedUpdatePlayer({ journalText: text });
+              handleLocalUpdate({ journalText: text });
             }}
             onFocus={field => (focusedInputRef.current = field)}
             onBlur={() => (focusedInputRef.current = null)}

@@ -2,18 +2,17 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import CustomText from '../CustomText';
 import { getCharacterColor } from '../../utils';
-import { Player } from '../../screens/GamePage';
-import { Dispatch, SetStateAction } from 'react';
+import { usePlayerStore, Player } from '../../store/playerStore';
 
 type PlayerBubblesProps = {
   players: Player[];
-  viewedPlayer: Player | null;
-  onSetViewedPlayer: Dispatch<SetStateAction<Player | null>>;
+  viewedPlayerId: number | null;
+  onSetViewedPlayer: (id: number) => void;
 };
 
 const PlayerBubbles = ({
   players,
-  viewedPlayer,
+  viewedPlayerId,
   onSetViewedPlayer,
 }: PlayerBubblesProps) => {
   return (
@@ -21,7 +20,7 @@ const PlayerBubbles = ({
       {players.map(player => (
         <View key={player.id} style={styles.innerSidebar}>
           <Pressable
-            onPress={() => onSetViewedPlayer(player)}
+            onPress={() => onSetViewedPlayer(player.id)}
             style={[
               styles.bubble,
               { backgroundColor: getCharacterColor(player.character) },
@@ -36,7 +35,7 @@ const PlayerBubbles = ({
             </CustomText>
           </Pressable>
 
-          {player.id === viewedPlayer?.id && (
+          {player.id === viewedPlayerId && (
             <View
               style={[
                 styles.triangle,
