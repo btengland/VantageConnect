@@ -145,27 +145,37 @@ const GamePage = () => {
   }, [isMyTurn]);
 
   useEffect(() => {
-    onWebSocketDisconnect(() => {
+    const disconnectSubscription = onWebSocketDisconnect(() => {
       console.log('WebSocket disconnected, navigating to Home');
       (navigation as any).navigate('Home');
     });
+
+    return () => {
+      disconnectSubscription();
+    };
   }, [navigation]);
 
   useEffect(() => {
+    let isMounted = true;
+    const cleanupFunctions: (() => void)[] = [];
+
     const initWebSocket = async () => {
       try {
         // 1️⃣ Connect WS
         await connectWebSocket();
+        if (!isMounted) return;
         console.log('WebSocket connected');
 
         // 2️⃣ Set up listeners
-        onChallengeDiceUpdate(newDice => {
+        const challengeDiceCleanup = onChallengeDiceUpdate(newDice => {
           if (isMyTurnRef.current) return; // ignore updates if it's my turn
           setChallengeDice(newDice);
         });
+        cleanupFunctions.push(challengeDiceCleanup);
 
-        onPlayersUpdate(
+        const playersUpdateCleanup = onPlayersUpdate(
           (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
+            if (!isMounted) return;
             const playersFromBackend = gameData.players;
 
             // Only set initial challengeDice once
@@ -257,17 +267,26 @@ const GamePage = () => {
             });
           },
         );
+        cleanupFunctions.push(playersUpdateCleanup);
 
         // 3️⃣ Initial data fetch
         readPlayers(sessionCode);
         readChallengeDice(sessionCode);
       } catch (err) {
         console.error('WebSocket connection failed:', err);
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initWebSocket();
+
+    return () => {
+      isMounted = false;
+      console.log('Cleaning up WebSocket listeners...');
+      cleanupFunctions.forEach(cleanup => cleanup());
+    };
   }, [playerId, sessionCode]);
 
   useEffect(() => {

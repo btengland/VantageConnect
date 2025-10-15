@@ -37,11 +37,18 @@ wsClient.onMessage((data: any) => {
 });
 
 // Function to register a callback for a specific action
-const on = (action: string, callback: (data: any) => void) => {
+const on = (action: string, callback: (data: any) => void): (() => void) => {
   if (!messageCallbacks[action]) {
     messageCallbacks[action] = [];
   }
   messageCallbacks[action].push(callback);
+
+  // Return a cleanup function
+  return () => {
+    messageCallbacks[action] = messageCallbacks[action].filter(
+      cb => cb !== callback,
+    );
+  };
 };
 
 export const readPlayers = (sessionCode: number) => {
@@ -49,7 +56,7 @@ export const readPlayers = (sessionCode: number) => {
 };
 
 export const onPlayersUpdate = (callback: (data: any) => void) => {
-  on('updatePlayers', data => {
+  return on('updatePlayers', data => {
     callback(data); // send the whole object { players, challengeDice, code }
   });
 };
@@ -83,7 +90,7 @@ export const updateChallengeDice = (sessionCode: number, value: number) => {
 };
 
 export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
-  on('updateChallengeDice', data => {
+  return on('updateChallengeDice', data => {
     if (data.challengeDice !== undefined) {
       callback(data.challengeDice);
     }
@@ -96,5 +103,5 @@ export const leaveGame = async (playerId: number) => {
 };
 
 export const onWebSocketDisconnect = (callback: () => void) => {
-  wsClient.onDisconnect(callback);
+  return wsClient.onDisconnect(callback);
 };
