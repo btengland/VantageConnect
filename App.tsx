@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
 import { View, ActivityIndicator } from 'react-native';
 
+import ErrorBoundary from './src/components/ErrorBoundary';
 import HomePage from './src/screens/HomePage';
 import GamePage from './src/screens/GamePage';
 
@@ -35,14 +36,16 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{ headerShown: false }}
-      >
-        <Stack.Screen name="Home" component={HomePage} />
-        <Stack.Screen name="Game" component={GamePage} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ErrorBoundary>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Home"
+          screenOptions={{ headerShown: false }}
+        >
+          <Stack.Screen name="Home" component={HomePage} />
+          <Stack.Screen name="Game" component={GamePage} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }

@@ -31,25 +31,47 @@ const messageCallbacks: { [action: string]: ((data: any) => void)[] } = {};
 
 // Single message handler to dispatch to registered callbacks
 wsClient.onMessage((data: any) => {
-  if (data.action && messageCallbacks[data.action]) {
-    messageCallbacks[data.action].forEach(callback => callback(data));
+  try {
+    if (data && data.action && messageCallbacks[data.action]) {
+      messageCallbacks[data.action].forEach(callback => {
+        try {
+          callback(data);
+        } catch (callbackError) {
+          console.error(
+            `Error in callback for action "${data.action}":`,
+            callbackError,
+          );
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error in wsClient.onMessage handler:', error);
   }
 });
 
-// Function to register a callback for a specific action
-const on = (action: string, callback: (data: any) => void) => {
+// Function to register a callback for a specific action, returns an unsubscribe function
+const on = (action: string, callback: (data: any) => void): (() => void) => {
   if (!messageCallbacks[action]) {
     messageCallbacks[action] = [];
   }
   messageCallbacks[action].push(callback);
+
+  // Return a function to unsubscribe
+  return () => {
+    messageCallbacks[action] = messageCallbacks[action].filter(
+      cb => cb !== callback,
+    );
+  };
 };
 
 export const readPlayers = (sessionCode: number) => {
   wsClient.sendMessage({ action: 'readPlayers', sessionCode });
 };
 
-export const onPlayersUpdate = (callback: (data: any) => void) => {
-  on('updatePlayers', data => {
+export const onPlayersUpdate = (
+  callback: (data: any) => void,
+): (() => void) => {
+  return on('updatePlayers', data => {
     callback(data); // send the whole object { players, challengeDice, code }
   });
 };
@@ -82,9 +104,11 @@ export const updateChallengeDice = (sessionCode: number, value: number) => {
   });
 };
 
-export const onChallengeDiceUpdate = (callback: (value: number) => void) => {
-  on('updateChallengeDice', data => {
-    if (data.challengeDice !== undefined) {
+export const onChallengeDiceUpdate = (
+  callback: (value: number) => void,
+): (() => void) => {
+  return on('updateChallengeDice', data => {
+    if (data && data.challengeDice !== undefined) {
       callback(data.challengeDice);
     }
   });
@@ -95,6 +119,6 @@ export const leaveGame = async (playerId: number) => {
   return await wsClient.once('leaveSession');
 };
 
-export const onWebSocketDisconnect = (callback: () => void) => {
-  wsClient.onDisconnect(callback);
+export const onWebSocketDisconnect = (callback: () => void): (() => void) => {
+  return wsClient.onDisconnect(callback);
 };

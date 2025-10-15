@@ -85,24 +85,26 @@ function PlayerCard({
 
   const handleAddImpactSlot = () => {
     if (!isEditable) return;
+    const currentSlots = player.impactDiceSlots || [];
     updatePlayer({
-      impactDiceSlots: [
-        ...player.impactDiceSlots,
-        { symbol: 'any', checked: false },
-      ],
+      impactDiceSlots: [...currentSlots, { symbol: 'any', checked: false }],
     });
   };
 
   const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
     if (!isEditable) return;
-    const slots = [...player.impactDiceSlots];
-    slots[index] = newSlot;
-    updatePlayer({ impactDiceSlots: slots });
+    const slots = [...(player.impactDiceSlots || [])];
+    if (index >= 0 && index < slots.length) {
+      slots[index] = newSlot;
+      updatePlayer({ impactDiceSlots: slots });
+    } else {
+      console.error(`Attempted to update impact slot at invalid index: ${index}`);
+    }
   };
 
   const handleRemoveImpactSlot = (index: number) => {
     if (!isEditable) return;
-    const slots = player.impactDiceSlots.filter((_, i) => i !== index);
+    const slots = (player.impactDiceSlots || []).filter((_, i) => i !== index);
     updatePlayer({ impactDiceSlots: slots });
   };
 
@@ -299,8 +301,8 @@ function PlayerCard({
               Impact Dice Slots
             </CustomText>
             <View style={styles.impactGrid}>
-              {player.impactDiceSlots.map((slot, index) => (
-                <View key={index} style={styles.impactSlot}>
+              {(player.impactDiceSlots || []).map((slot, index) => (
+                <View key={slot.id || index} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
                       isEditable &&
@@ -359,7 +361,9 @@ function PlayerCard({
           </View>
 
           <StatusUpdates
-            statuses={player.statuses}
+            statuses={
+              player.statuses || { heart: 0, star: 0, 'timer-sand-full': 0 }
+            }
             isEditable={isEditable}
             onUpdate={newStatuses => updatePlayer({ statuses: newStatuses })}
           />

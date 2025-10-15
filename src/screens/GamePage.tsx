@@ -166,50 +166,75 @@ const GamePage = () => {
 
         onPlayersUpdate(
           (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
-            const playersFromBackend = gameData.players;
+            try {
+              if (!gameData || !Array.isArray(gameData.players)) {
+                console.error(
+                  'Invalid gameData received from backend:',
+                  gameData,
+                );
+                return;
+              }
+              const playersFromBackend = gameData.players;
 
-            // Only set initial challengeDice once
-            if (!challengeDiceInitialized.current) {
-              setChallengeDice(gameData.challengeDice);
-              challengeDiceInitialized.current = true;
-            }
+              // Only set initial challengeDice once
+              if (!challengeDiceInitialized.current) {
+                setChallengeDice(gameData.challengeDice);
+                challengeDiceInitialized.current = true;
+              }
 
-            const transformedBackendPlayers = playersFromBackend.map(
-              (p: BackendPlayer): Player => {
-                const defaultSkillTokens = Array(6).fill({ quantity: 0 });
-                // The backend sometimes sends an object instead of an array
-                const skillTokens =
-                  p.skillTokens && !Array.isArray(p.skillTokens)
-                    ? Object.values(p.skillTokens)
-                    : p.skillTokens || defaultSkillTokens;
-                const impactDiceSlots =
-                  p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
-                    ? Object.values(p.impactDiceSlots)
-                    : p.impactDiceSlots || [];
+              const transformedBackendPlayers = (playersFromBackend || [])
+                .map((p: BackendPlayer): Player | null => {
+                  if (!p) {
+                    console.error(
+                      'Received null or undefined player object from backend',
+                    );
+                    return null; // Will be filtered out later
+                  }
+                  const defaultSkillTokens = Array(6).fill({ quantity: 0 });
 
-                return {
-                  id: p.playerId,
-                  sessionCode: p.sessionCode,
-                  playerNumber: Number(p.playerNumber) || 0,
-                  name: p.name || '',
-                  character: p.character || '',
-                  escapePod: p.escapePod || '',
-                  location: p.location || '',
-                  skillTokens,
-                  turn: p.turn || false,
-                  journalText: p.journalText || '',
-                  statuses: p.statuses || {
-                    heart: 0,
-                    star: 0,
-                    'timer-sand-full': 0,
-                  },
-                  impactDiceSlots,
-                };
-              },
-            );
+                  // The backend sometimes sends an object instead of an array
+                  const skillTokens =
+                    p.skillTokens && !Array.isArray(p.skillTokens)
+                      ? (Object.values(p.skillTokens) as SkillToken[])
+                      : p.skillTokens || defaultSkillTokens;
 
-            setPlayerInfoWithRef(prevPlayerInfo => {
-              if (prevPlayerInfo.length === 0) {
+                  const impactDiceSlots =
+                    p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
+                      ? Object.values(p.impactDiceSlots)
+                      : p.impactDiceSlots || [];
+
+                  // Defensive padding to prevent out-of-bounds access
+                  const paddedSkillTokens = [...skillTokens];
+                  while (paddedSkillTokens.length < 6) {
+                    paddedSkillTokens.push({ quantity: 0 });
+                  }
+
+                  return {
+                    id: p.playerId,
+                    sessionCode: p.sessionCode,
+                    playerNumber: Number(p.playerNumber) || 0,
+                    name: p.name || '',
+                    character: p.character || '',
+                    escapePod: p.escapePod || '',
+                    location: p.location || '',
+                    skillTokens: paddedSkillTokens,
+                    turn: p.turn || false,
+                    journalText: p.journalText || '',
+                    statuses: p.statuses || {
+                      heart: 0,
+                      star: 0,
+                      'timer-sand-full': 0,
+                    },
+                    impactDiceSlots: impactDiceSlots.map((slot, index) => ({
+                      ...slot,
+                      id: `${p.playerId}-${index}`, // Add a stable ID
+                    })),
+                  };
+                })
+                .filter((p): p is Player => p !== null);
+
+              setPlayerInfoWithRef(prevPlayerInfo => {
+                if (prevPlayerInfo.length === 0) {
                 setLoading(false);
                 return rotatePlayers(transformedBackendPlayers, playerId);
               }
@@ -255,6 +280,9 @@ const GamePage = () => {
 
               return newPlayerOrder;
             });
+            } catch (error) {
+              console.error('Error processing player update:', error);
+            }
           },
         );
 
