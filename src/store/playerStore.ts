@@ -27,6 +27,7 @@ interface PlayerState {
   initializePlayers: (players: Player[], localPlayerId: number) => void;
   mergePlayerUpdates: (players: Player[], localPlayerId: number) => void;
   updatePlayer: (playerId: number, updates: Partial<Player>) => void;
+  playerUpdated: (player: Player) => void;
 }
 
 const rotatePlayers = (players: Player[], currentPlayerId: number): Player[] => {
@@ -89,6 +90,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set(state => ({
       playerInfo: state.playerInfo.map(p =>
         p.id === playerId ? { ...p, ...updates } : p,
+      ),
+    }));
+  },
+
+  playerUpdated: (player: Player) => {
+    set(state => ({
+      playerInfo: state.playerInfo.map(p =>
+        p.id === player.id ? player : p,
       ),
     }));
   },

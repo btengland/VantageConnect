@@ -65,6 +65,14 @@ export const onPlayersUpdate = (callback: (data: any) => void) => {
   return () => off('updatePlayers', handler);
 };
 
+export const onPlayerUpdate = (callback: (data: any) => void) => {
+  const handler = (data: any) => {
+    callback(data.player);
+  };
+  on('playerUpdated', handler);
+  return () => off('playerUpdated', handler);
+};
+
 export const readChallengeDice = (sessionCode: number) => {
   wsClient.sendMessage({ action: 'readChallengeDice', gameId: sessionCode });
 };
@@ -108,7 +116,5 @@ export const leaveGame = async (playerId: number) => {
 };
 
 export const onWebSocketDisconnect = (callback: () => void) => {
-  wsClient.onDisconnect(callback);
-  // Assuming wsClient.onDisconnect returns a function to unsubscribe
-  // If not, the GameWebSocket class needs to be modified to support this
+  return wsClient.onDisconnect(callback);
 };

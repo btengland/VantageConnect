@@ -14,6 +14,7 @@ import {
   connectWebSocket,
   readPlayers,
   onPlayersUpdate,
+  onPlayerUpdate,
   updateChallengeDice,
   onChallengeDiceUpdate,
   readChallengeDice,
@@ -61,6 +62,7 @@ const GamePage = () => {
     mergePlayerUpdates,
     setViewedPlayerId,
     updatePlayer,
+    playerUpdated,
   } = usePlayerStore();
 
   const [isOpen, setOpen] = useState(false);
@@ -158,6 +160,7 @@ const GamePage = () => {
     let disconnectListener: (() => void) | undefined;
     let challengeDiceListener: (() => void) | undefined;
     let playersListener: (() => void) | undefined;
+    let playerListener: (() => void) | undefined;
 
     const initWebSocket = async () => {
       try {
@@ -169,6 +172,7 @@ const GamePage = () => {
         });
 
         playersListener = onPlayersUpdate(throttledOnPlayersUpdate);
+        playerListener = onPlayerUpdate(playerUpdated);
 
         disconnectListener = onWebSocketDisconnect(() => {
           console.log('WebSocket disconnected, navigating to Home');
@@ -189,8 +193,9 @@ const GamePage = () => {
       if (disconnectListener) disconnectListener();
       if (challengeDiceListener) challengeDiceListener();
       if (playersListener) playersListener();
+      if (playerListener) playerListener();
     };
-  }, [sessionCode, throttledOnPlayersUpdate, navigation]);
+  }, [sessionCode, throttledOnPlayersUpdate, navigation, playerUpdated]);
 
   const debouncedUpdateDice = useRef(
     debounce((val: number) => updateChallengeDice(sessionCode, val), 300),
