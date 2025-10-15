@@ -151,116 +151,107 @@ const GamePage = () => {
     });
   }, [navigation]);
 
+  const throttledOnPlayersUpdate = useCallback(
+    throttle(
+      (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
+        const playersFromBackend = gameData.players;
+
+        if (!challengeDiceInitialized.current) {
+          setChallengeDice(gameData.challengeDice);
+          challengeDiceInitialized.current = true;
+        }
+
+        const transformedBackendPlayers = playersFromBackend.map(
+          (p: BackendPlayer): Player => {
+            const defaultSkillTokens = Array(6).fill({ quantity: 0 });
+            const skillTokens =
+              p.skillTokens && !Array.isArray(p.skillTokens)
+                ? Object.values(p.skillTokens)
+                : p.skillTokens || defaultSkillTokens;
+            const impactDiceSlots =
+              p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
+                ? Object.values(p.impactDiceSlots)
+                : p.impactDiceSlots || [];
+
+            return {
+              id: p.playerId,
+              sessionCode: p.sessionCode,
+              playerNumber: Number(p.playerNumber) || 0,
+              name: p.name || '',
+              character: p.character || '',
+              escapePod: p.escapePod || '',
+              location: p.location || '',
+              skillTokens,
+              turn: p.turn || false,
+              journalText: p.journalText || '',
+              statuses: p.statuses || {
+                heart: 0,
+                star: 0,
+                'timer-sand-full': 0,
+              },
+              impactDiceSlots,
+            };
+          },
+        );
+
+        setPlayerInfoWithRef(prevPlayerInfo => {
+          if (prevPlayerInfo.length === 0) {
+            setLoading(false);
+            return rotatePlayers(transformedBackendPlayers, playerId);
+          }
+
+          const backendPlayersMap = new Map(
+            transformedBackendPlayers.map(p => [p.id, p]),
+          );
+
+          const mergedPlayers = prevPlayerInfo
+            .map(localPlayer => {
+              const backendPlayer = backendPlayersMap.get(localPlayer.id);
+              if (backendPlayer) {
+                if (localPlayer.id === playerId) {
+                  return { ...localPlayer, turn: backendPlayer.turn };
+                }
+                return backendPlayer;
+              }
+              return null;
+            })
+            .filter((p): p is Player => p !== null);
+
+          const currentIds = new Set(mergedPlayers.map(p => p.id));
+          transformedBackendPlayers.forEach(backendPlayer => {
+            if (!currentIds.has(backendPlayer.id)) {
+              mergedPlayers.push(backendPlayer);
+            }
+          });
+
+          const newPlayerOrder = rotatePlayers(mergedPlayers, playerId);
+
+          if (isEqual(newPlayerOrder, prevPlayerInfo)) {
+            return prevPlayerInfo;
+          }
+
+          return newPlayerOrder;
+        });
+      },
+      500,
+      { leading: true, trailing: true },
+    ),
+    [playerId, setPlayerInfoWithRef],
+  );
+
   useEffect(() => {
     const initWebSocket = async () => {
       try {
-        // 1️⃣ Connect WS
         await connectWebSocket();
         console.log('WebSocket connected');
 
-        // 2️⃣ Set up listeners
         onChallengeDiceUpdate(newDice => {
-          if (isMyTurnRef.current) return; // ignore updates if it's my turn
+          if (isMyTurnRef.current) return;
           setChallengeDice(newDice);
         });
 
-        onPlayersUpdate(
-          useCallback(
-            throttle(
-              (gameData: {
-                players: BackendPlayer[];
-                challengeDice: number;
-              }) => {
-                const playersFromBackend = gameData.players;
+        onPlayersUpdate(throttledOnPlayersUpdate);
 
-                // Only set initial challengeDice once
-                if (!challengeDiceInitialized.current) {
-                  setChallengeDice(gameData.challengeDice);
-                  challengeDiceInitialized.current = true;
-                }
-
-                const transformedBackendPlayers = playersFromBackend.map(
-                  (p: BackendPlayer): Player => {
-                    const defaultSkillTokens = Array(6).fill({ quantity: 0 });
-                    const skillTokens =
-                      p.skillTokens && !Array.isArray(p.skillTokens)
-                        ? Object.values(p.skillTokens)
-                        : p.skillTokens || defaultSkillTokens;
-                    const impactDiceSlots =
-                      p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
-                        ? Object.values(p.impactDiceSlots)
-                        : p.impactDiceSlots || [];
-
-                    return {
-                      id: p.playerId,
-                      sessionCode: p.sessionCode,
-                      playerNumber: Number(p.playerNumber) || 0,
-                      name: p.name || '',
-                      character: p.character || '',
-                      escapePod: p.escapePod || '',
-                      location: p.location || '',
-                      skillTokens,
-                      turn: p.turn || false,
-                      journalText: p.journalText || '',
-                      statuses: p.statuses || {
-                        heart: 0,
-                        star: 0,
-                        'timer-sand-full': 0,
-                      },
-                      impactDiceSlots,
-                    };
-                  },
-                );
-
-                setPlayerInfoWithRef(prevPlayerInfo => {
-                  if (prevPlayerInfo.length === 0) {
-                    setLoading(false);
-                    return rotatePlayers(transformedBackendPlayers, playerId);
-                  }
-
-                  const backendPlayersMap = new Map(
-                    transformedBackendPlayers.map(p => [p.id, p]),
-                  );
-
-                  const mergedPlayers = prevPlayerInfo
-                    .map(localPlayer => {
-                      const backendPlayer = backendPlayersMap.get(
-                        localPlayer.id,
-                      );
-                      if (backendPlayer) {
-                        if (localPlayer.id === playerId) {
-                          return { ...localPlayer, turn: backendPlayer.turn };
-                        }
-                        return backendPlayer;
-                      }
-                      return null;
-                    })
-                    .filter((p): p is Player => p !== null);
-
-                  const currentIds = new Set(mergedPlayers.map(p => p.id));
-                  transformedBackendPlayers.forEach(backendPlayer => {
-                    if (!currentIds.has(backendPlayer.id)) {
-                      mergedPlayers.push(backendPlayer);
-                    }
-                  });
-
-                  const newPlayerOrder = rotatePlayers(mergedPlayers, playerId);
-
-                  if (isEqual(newPlayerOrder, prevPlayerInfo)) {
-                    return prevPlayerInfo;
-                  }
-
-                  return newPlayerOrder;
-                });
-              },
-              500, // 500ms delay
-              { leading: true, trailing: true },
-            ),
-            [playerId, setPlayerInfoWithRef],
-          ),
-        );
-
-        // 3️⃣ Initial data fetch
         readPlayers(sessionCode);
         readChallengeDice(sessionCode);
       } catch (err) {
@@ -270,7 +261,7 @@ const GamePage = () => {
     };
 
     initWebSocket();
-  }, [playerId, sessionCode]);
+  }, [playerId, sessionCode, throttledOnPlayersUpdate]);
 
   useEffect(() => {
     setViewedPlayer(currentViewedPlayer => {
