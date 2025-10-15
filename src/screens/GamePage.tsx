@@ -186,12 +186,32 @@ const GamePage = () => {
 
             const transformedBackendPlayers = playersFromBackend.map(
               (p: BackendPlayer): Player => {
-                const defaultSkillTokens = Array(6).fill({ quantity: 0 });
+                // Ensure skillTokens is a fixed-length array of 6, creating new objects
+                const defaultSkillTokens = Array.from({ length: 6 }, () => ({
+                  quantity: 0,
+                }));
+                let skillTokensSource = p.skillTokens || [];
+
                 // The backend sometimes sends an object instead of an array
-                const skillTokens =
-                  p.skillTokens && !Array.isArray(p.skillTokens)
-                    ? Object.values(p.skillTokens)
-                    : p.skillTokens || defaultSkillTokens;
+                if (skillTokensSource && !Array.isArray(skillTokensSource)) {
+                  skillTokensSource = Object.values(skillTokensSource);
+                }
+
+                // Safely merge backend tokens with defaults
+                const skillTokens = defaultSkillTokens.map(
+                  (defaultToken, index) => {
+                    const backendToken = skillTokensSource[index];
+                    // Ensure the backend token has the required 'quantity' property
+                    if (
+                      backendToken &&
+                      typeof backendToken.quantity === 'number'
+                    ) {
+                      return backendToken;
+                    }
+                    return defaultToken;
+                  },
+                );
+
                 const impactDiceSlots =
                   p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
                     ? Object.values(p.impactDiceSlots)
