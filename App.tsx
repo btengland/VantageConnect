@@ -6,10 +6,33 @@ import { View, ActivityIndicator } from 'react-native';
 
 import HomePage from './src/screens/HomePage';
 import GamePage from './src/screens/GamePage';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://e74f4288c5bd7d8820a698f631da87ac@o4510200585650176.ingest.us.sentry.io/4510200602951680',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [
+    Sentry.mobileReplayIntegration(),
+    Sentry.feedbackIntegration(),
+  ],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+export default Sentry.wrap(function App() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   const loadFonts = async () => {
@@ -45,4 +68,4 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+});

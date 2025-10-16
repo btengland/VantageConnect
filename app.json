@@ -3,7 +3,15 @@
     "name": "RemoteVantage",
     "slug": "remotevantage",
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "vanntage-connect",
+          "organization": "08162024-cq"
+        }
+      ]
     ],
     "android": {
       "package": "com.anonymous.remotevantage"
