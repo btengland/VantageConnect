@@ -105,7 +105,7 @@ const GamePage = () => {
   const debouncedUpdatePlayer = useRef(
     debounce((player: Player) => {
       updatePlayer(player);
-    }, 300), // 300ms delay
+    }, 500), // 500ms delay
   ).current;
 
   const handleUpdatePlayer = useCallback(
@@ -145,13 +145,17 @@ const GamePage = () => {
   }, [isMyTurn]);
 
   useEffect(() => {
-    onWebSocketDisconnect(() => {
+    const off = onWebSocketDisconnect(() => {
       console.log('WebSocket disconnected, navigating to Home');
       (navigation as any).navigate('Home');
     });
+    return off;
   }, [navigation]);
 
   useEffect(() => {
+    let offPlayersUpdate: () => void;
+    let offChallengeDiceUpdate: () => void;
+
     const initWebSocket = async () => {
       try {
         // 1️⃣ Connect WS
@@ -159,12 +163,12 @@ const GamePage = () => {
         console.log('WebSocket connected');
 
         // 2️⃣ Set up listeners
-        onChallengeDiceUpdate(newDice => {
+        offChallengeDiceUpdate = onChallengeDiceUpdate(newDice => {
           if (isMyTurnRef.current) return; // ignore updates if it's my turn
           setChallengeDice(newDice);
         });
 
-        onPlayersUpdate(
+        offPlayersUpdate = onPlayersUpdate(
           (gameData: { players: BackendPlayer[]; challengeDice: number }) => {
             const playersFromBackend = gameData.players;
 
@@ -182,10 +186,17 @@ const GamePage = () => {
                   p.skillTokens && !Array.isArray(p.skillTokens)
                     ? Object.values(p.skillTokens)
                     : p.skillTokens || defaultSkillTokens;
-                const impactDiceSlots =
+                const impactDiceSlotsRaw =
                   p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
                     ? Object.values(p.impactDiceSlots)
                     : p.impactDiceSlots || [];
+
+                const impactDiceSlots = impactDiceSlotsRaw.map(
+                  (slot: any, index: number) => ({
+                    ...slot,
+                    id: `${p.playerId}-impact-${index}`, // Add a unique ID
+                  }),
+                );
 
                 return {
                   id: p.playerId,
@@ -268,6 +279,15 @@ const GamePage = () => {
     };
 
     initWebSocket();
+
+    return () => {
+      if (offPlayersUpdate) {
+        offPlayersUpdate();
+      }
+      if (offChallengeDiceUpdate) {
+        offChallengeDiceUpdate();
+      }
+    };
   }, [playerId, sessionCode]);
 
   useEffect(() => {

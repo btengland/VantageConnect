@@ -23,7 +23,7 @@ import SkillTokens from './player/SkillTokens';
 import StatusUpdates from './player/StatusUpdates';
 
 type SkillToken = { quantity: number };
-type ImpactDiceSlot = { symbol: string; checked: boolean };
+type ImpactDiceSlot = { id: string; symbol: string; checked: boolean };
 type Player = {
   id: number;
   sessionCode: number;
@@ -300,7 +300,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.impactGrid}>
               {player.impactDiceSlots.map((slot, index) => (
-                <View key={index} style={styles.impactSlot}>
+                <View key={slot.id} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
                       isEditable &&
