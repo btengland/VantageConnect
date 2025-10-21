@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable, Image } from 'react-native';
 import CustomText from '../CustomText';
 
-type SkillToken = { quantity: number };
+type SkillToken = { id: string; quantity: number };
 
 type SkillTokensProps = {
   skillTokens: SkillToken[];
@@ -17,10 +17,10 @@ const SkillTokens = ({
   isEditable,
   onUpdate,
 }: SkillTokensProps) => {
-  const handleTokenChange = (index: number, delta: number) => {
+  const handleTokenChange = (id: string, delta: number) => {
     if (!isEditable) return;
-    const newTokens = skillTokens.map((token, i) =>
-      i === index
+    const newTokens = skillTokens.map(token =>
+      token.id === id
         ? { ...token, quantity: Math.max(0, token.quantity + delta) }
         : token,
     );
@@ -34,7 +34,7 @@ const SkillTokens = ({
       </CustomText>
       <View style={styles.skillTokenGrid}>
         {skillTokens.map((token, index) => (
-          <View key={index} style={styles.skillTokenBox}>
+          <View key={token.id} style={styles.skillTokenBox}>
             <View style={styles.iconBox}>
               <View style={styles.tokenContent}>
                 <View style={styles.tokenIcon}>
@@ -50,7 +50,7 @@ const SkillTokens = ({
                   {isEditable && (
                     <Pressable
                       style={styles.tokenButton}
-                      onPress={() => handleTokenChange(index, -1)}
+                      onPress={() => handleTokenChange(token.id, -1)}
                     >
                       <CustomText style={styles.tokenButtonText}>-</CustomText>
                     </Pressable>
@@ -61,7 +61,7 @@ const SkillTokens = ({
                   {isEditable && (
                     <Pressable
                       style={styles.tokenButton}
-                      onPress={() => handleTokenChange(index, 1)}
+                      onPress={() => handleTokenChange(token.id, 1)}
                     >
                       <CustomText style={styles.tokenButtonText}>+</CustomText>
                     </Pressable>

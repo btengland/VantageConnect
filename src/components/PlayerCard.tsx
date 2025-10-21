@@ -22,7 +22,7 @@ import { endTurn } from '../api';
 import SkillTokens from './player/SkillTokens';
 import StatusUpdates from './player/StatusUpdates';
 
-type SkillToken = { quantity: number };
+type SkillToken = { id: string; quantity: number };
 type ImpactDiceSlot = { id: string; symbol: string; checked: boolean };
 type Player = {
   id: number;

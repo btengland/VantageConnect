@@ -31,7 +31,9 @@ const skillTokenIcons = [
   require('../assets/Overpower.png'),
 ];
 
-type SkillToken = { quantity: number };
+const skillTokenIds = ['move', 'look', 'engage', 'help', 'take', 'overpower'];
+
+type SkillToken = { id: string; quantity: number };
 type Statuses = { heart: number; star: number; 'timer-sand-full': number };
 export type Player = {
   id: number;
@@ -180,12 +182,20 @@ const GamePage = () => {
 
             const transformedBackendPlayers = playersFromBackend.map(
               (p: BackendPlayer): Player => {
-                const defaultSkillTokens = Array(6).fill({ quantity: 0 });
+                const defaultSkillTokens = Array.from({ length: 6 }, () => ({
+                  quantity: 0,
+                }));
                 // The backend sometimes sends an object instead of an array
-                const skillTokens =
+                const skillTokensRaw = (
                   p.skillTokens && !Array.isArray(p.skillTokens)
                     ? Object.values(p.skillTokens)
-                    : p.skillTokens || defaultSkillTokens;
+                    : p.skillTokens || defaultSkillTokens
+                ) as SkillToken[];
+
+                const skillTokens = skillTokensRaw.map((token, index) => ({
+                  ...token,
+                  id: skillTokenIds[index],
+                }));
                 const impactDiceSlotsRaw =
                   p.impactDiceSlots && !Array.isArray(p.impactDiceSlots)
                     ? Object.values(p.impactDiceSlots)
