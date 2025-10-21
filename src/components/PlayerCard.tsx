@@ -85,11 +85,15 @@ function PlayerCard({
 
   const handleAddImpactSlot = () => {
     if (!isEditable) return;
+
+    const newSlot: ImpactDiceSlot = {
+      id: Date.now().toString(),
+      symbol: 'any',
+      checked: false,
+    };
+
     updatePlayer({
-      impactDiceSlots: [
-        ...player.impactDiceSlots,
-        { symbol: 'any', checked: false },
-      ],
+      impactDiceSlots: [...player.impactDiceSlots, newSlot],
     });
   };
 
