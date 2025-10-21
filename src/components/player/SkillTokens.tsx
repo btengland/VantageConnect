@@ -6,14 +6,14 @@ type SkillToken = { id: string; quantity: number };
 
 type SkillTokensProps = {
   skillTokens: SkillToken[];
-  skillTokenIcons: any[];
+  skillTokenIconMap: { [key: string]: any };
   isEditable: boolean;
   onUpdate: (newTokens: SkillToken[]) => void;
 };
 
 const SkillTokens = ({
   skillTokens,
-  skillTokenIcons,
+  skillTokenIconMap,
   isEditable,
   onUpdate,
 }: SkillTokensProps) => {
@@ -33,14 +33,14 @@ const SkillTokens = ({
         Skill Tokens
       </CustomText>
       <View style={styles.skillTokenGrid}>
-        {skillTokens.map((token, index) => (
+        {skillTokens.map(token => (
           <View key={token.id} style={styles.skillTokenBox}>
             <View style={styles.iconBox}>
               <View style={styles.tokenContent}>
                 <View style={styles.tokenIcon}>
                   <View style={styles.iconWrapper}>
                     <Image
-                      source={skillTokenIcons[index]}
+                      source={skillTokenIconMap[token.id]}
                       style={{ width: 30, height: 30 }}
                       resizeMode="contain"
                     />

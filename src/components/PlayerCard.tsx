@@ -43,7 +43,7 @@ type PlayerCardProps = {
   currentPlayerId: number;
   player: Player;
   getCharacterColor: (characterText: string) => string;
-  skillTokenIcons: any[];
+  skillTokenIconMap: { [key: string]: any };
   onUpdatePlayer: (updates: Partial<Player>) => void;
   totalPlayers: number;
 };
@@ -52,7 +52,7 @@ function PlayerCard({
   currentPlayerId,
   player,
   getCharacterColor,
-  skillTokenIcons,
+  skillTokenIconMap,
   onUpdatePlayer,
   totalPlayers,
 }: PlayerCardProps) {
@@ -97,17 +97,21 @@ function PlayerCard({
     });
   };
 
-  const handleUpdateImpactSlot = (index: number, newSlot: ImpactDiceSlot) => {
+  const handleUpdateImpactSlot = (
+    id: string,
+    updates: Partial<ImpactDiceSlot>,
+  ) => {
     if (!isEditable) return;
-    const slots = [...player.impactDiceSlots];
-    slots[index] = newSlot;
-    updatePlayer({ impactDiceSlots: slots });
+    const newSlots = player.impactDiceSlots.map(slot =>
+      slot.id === id ? { ...slot, ...updates } : slot,
+    );
+    updatePlayer({ impactDiceSlots: newSlots });
   };
 
-  const handleRemoveImpactSlot = (index: number) => {
+  const handleRemoveImpactSlot = (id: string) => {
     if (!isEditable) return;
-    const slots = player.impactDiceSlots.filter((_, i) => i !== index);
-    updatePlayer({ impactDiceSlots: slots });
+    const newSlots = player.impactDiceSlots.filter(slot => slot.id !== id);
+    updatePlayer({ impactDiceSlots: newSlots });
   };
 
   // Reset loading when it becomes this player's turn again
@@ -292,7 +296,7 @@ function PlayerCard({
 
           <SkillTokens
             skillTokens={player.skillTokens}
-            skillTokenIcons={skillTokenIcons}
+            skillTokenIconMap={skillTokenIconMap}
             isEditable={isEditable}
             onUpdate={newTokens => updatePlayer({ skillTokens: newTokens })}
           />
@@ -303,13 +307,12 @@ function PlayerCard({
               Impact Dice Slots
             </CustomText>
             <View style={styles.impactGrid}>
-              {player.impactDiceSlots.map((slot, index) => (
+              {player.impactDiceSlots.map(slot => (
                 <View key={slot.id} style={styles.impactSlot}>
                   <Pressable
                     onPress={() =>
                       isEditable &&
-                      handleUpdateImpactSlot(index, {
-                        ...slot,
+                      handleUpdateImpactSlot(slot.id, {
                         checked: !slot.checked,
                       })
                     }
@@ -331,17 +334,14 @@ function PlayerCard({
                       selectedValue={slot.symbol}
                       onValueChange={value =>
                         isEditable &&
-                        handleUpdateImpactSlot(index, {
-                          ...slot,
-                          symbol: value,
-                        })
+                        handleUpdateImpactSlot(slot.id, { symbol: value })
                       }
                     />
                   </View>
                   {isEditable && (
                     <Pressable
                       onPress={() =>
-                        isEditable && handleRemoveImpactSlot(index)
+                        isEditable && handleRemoveImpactSlot(slot.id)
                       }
                     >
                       <MaterialCommunityIcons

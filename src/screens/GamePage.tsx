@@ -22,16 +22,15 @@ import {
 } from '../api';
 
 // Define icons once here, outside the component
-const skillTokenIcons = [
-  require('../assets/Move.png'),
-  require('../assets/Look.png'),
-  require('../assets/Engage.png'),
-  require('../assets/Help.png'),
-  require('../assets/Take.png'),
-  require('../assets/Overpower.png'),
-];
-
 const skillTokenIds = ['move', 'look', 'engage', 'help', 'take', 'overpower'];
+const skillTokenIconMap: { [key: string]: any } = {
+  move: require('../assets/Move.png'),
+  look: require('../assets/Look.png'),
+  engage: require('../assets/Engage.png'),
+  help: require('../assets/Help.png'),
+  take: require('../assets/Take.png'),
+  overpower: require('../assets/Overpower.png'),
+};
 
 type SkillToken = { id: string; quantity: number };
 type Statuses = { heart: number; star: number; 'timer-sand-full': number };
@@ -384,7 +383,7 @@ const GamePage = () => {
               currentPlayerId={playerId}
               player={viewedPlayer}
               getCharacterColor={getCharacterColor}
-              skillTokenIcons={skillTokenIcons}
+              skillTokenIconMap={skillTokenIconMap}
               onUpdatePlayer={handleUpdatePlayer}
               totalPlayers={playerInfo.length}
             />
