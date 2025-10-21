@@ -2,7 +2,6 @@
   "expo": {
     "name": "RemoteVantage",
     "slug": "remotevantage",
-    "jsEngine": "jsc",
     "plugins": [
       "expo-font",
       [
