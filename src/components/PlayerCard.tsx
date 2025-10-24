@@ -17,7 +17,7 @@ import CustomText from './CustomText';
 import IconPicker from './IconPicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { CHARACTERS, ESCAPE_PODS, IMPACT_SYMBOLS } from '../constants';
-import { getOrdinal, lightenColor } from '../utils';
+import { getOrdinal, lightenColor, getCharacterColor } from '../utils';
 import { endTurn } from '../api';
 import SkillTokens from './player/SkillTokens';
 import StatusUpdates from './player/StatusUpdates';
@@ -42,7 +42,6 @@ type Player = {
 type PlayerCardProps = {
   currentPlayerId: number;
   player: Player;
-  getCharacterColor: (characterText: string) => string;
   skillTokenIconMap: { [key: string]: any };
   onUpdatePlayer: (updates: Partial<Player>) => void;
   totalPlayers: number;
@@ -51,7 +50,6 @@ type PlayerCardProps = {
 function PlayerCard({
   currentPlayerId,
   player,
-  getCharacterColor,
   skillTokenIconMap,
   onUpdatePlayer,
   totalPlayers,

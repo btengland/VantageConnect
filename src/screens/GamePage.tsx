@@ -7,7 +7,6 @@ import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from '../components/PlayerCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomText from '../components/CustomText';
-import { getCharacterColor } from '../utils';
 import GameHeader from '../components/game/GameHeader';
 import PlayerBubbles from '../components/game/PlayerBubbles';
 import {
@@ -382,7 +381,6 @@ const GamePage = () => {
             <PlayerCard
               currentPlayerId={playerId}
               player={viewedPlayer}
-              getCharacterColor={getCharacterColor}
               skillTokenIconMap={skillTokenIconMap}
               onUpdatePlayer={handleUpdatePlayer}
               totalPlayers={playerInfo.length}
