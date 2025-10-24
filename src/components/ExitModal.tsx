@@ -4,6 +4,7 @@ import { SharedStyles } from './SharedStyles';
 import BaseModal from './BaseModal';
 import CustomText from './CustomText';
 import { leaveGame } from '../api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ExitModalProps = {
   playerId: number;
@@ -20,6 +21,8 @@ const ExitModal = ({ playerId, isOpen, toggleModal }: ExitModalProps) => {
     try {
       // tell backend to remove me
       await leaveGame(playerId);
+
+      await AsyncStorage.clear();
 
       // now navigate home
       toggleModal(true);

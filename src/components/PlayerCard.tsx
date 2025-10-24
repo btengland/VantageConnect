@@ -210,7 +210,7 @@ function PlayerCard({
             </CustomText>
             <View style={styles.pickerWrapper}>
               <Picker
-                selectedValue={player.character}
+                selectedValue={''}
                 style={
                   Platform.OS === 'android' ? styles.pickerAndroid : undefined
                 }
