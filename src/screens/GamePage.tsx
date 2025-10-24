@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { debounce, isEqual } from 'lodash';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  BackHandler,
+} from 'react-native';
 import ExitModal from '../components/ExitModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import PlayerCard from '../components/PlayerCard';
@@ -18,7 +24,9 @@ import {
   readChallengeDice,
   updatePlayer,
   onWebSocketDisconnect,
+  leaveGame,
 } from '../api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define icons once here, outside the component
 const skillTokenIds = ['move', 'look', 'engage', 'help', 'take', 'overpower'];
@@ -151,6 +159,32 @@ const GamePage = () => {
     });
     return off;
   }, [navigation]);
+
+  useEffect(() => {
+    const backAction = () => {
+      handleLeaveGame();
+      return true; // This prevents the default back button action
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
+  const handleLeaveGame = async () => {
+    try {
+      // tell backend to remove me
+      await leaveGame(playerId);
+      await AsyncStorage.clear();
+      // now navigate home
+      (navigation as any).navigate('Home');
+    } catch (err) {
+      console.error('Failed to leave game:', err);
+    }
+  };
 
   useEffect(() => {
     let offPlayersUpdate: () => void;
