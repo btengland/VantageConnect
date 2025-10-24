@@ -110,7 +110,11 @@ export class GameWebSocket {
 
   close() {
     clearTimeout(this.reconnectTimeout);
-    this.ws?.close();
+    try {
+      this.ws?.close();
+    } catch (e) {
+      console.error('Error closing WebSocket:', e);
+    }
     this.ws = null;
     this.messageHandlers = [];
   }

@@ -8,7 +8,16 @@ const WS_URL =
 export const wsClient = new GameWebSocket(WS_URL);
 
 export const connectWebSocket = async () => {
+  if (wsClient.isConnected()) {
+    return;
+  }
   await wsClient.connect();
+};
+
+export const disconnectWebSocket = () => {
+  if (wsClient.isConnected()) {
+    wsClient.close();
+  }
 };
 
 export const hostGame = async (): Promise<{

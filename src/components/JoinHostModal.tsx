@@ -31,23 +31,10 @@ const JoinHostModal = ({
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Connect WebSocket once when modal mounts
-  useEffect(() => {
-    connectWebSocket().catch(err =>
-      console.error('WebSocket connect failed', err),
-    );
-
-    // Cleanup on unmount
-    return () => {
-      if (wsClient) {
-        wsClient.close();
-      }
-    };
-  }, []);
-
   const handleAction = async () => {
     setLoading(true);
     try {
+      await connectWebSocket();
       let data;
       if (buttonPressed === 'host') {
         data = await hostGame();
