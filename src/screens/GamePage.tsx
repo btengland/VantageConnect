@@ -112,7 +112,8 @@ const GamePage = () => {
 
   const debouncedUpdatePlayer = useRef(
     debounce((player: Player) => {
-      updatePlayer(player);
+      const { turn, ...playerDataToSend } = player;
+      updatePlayer(playerDataToSend);
     }, 500), // 500ms delay
   ).current;
 
