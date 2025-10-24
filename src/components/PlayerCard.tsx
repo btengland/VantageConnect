@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import DropdownPicker from './DropdownPicker';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
 import IconPicker from './IconPicker';
@@ -135,9 +135,6 @@ function PlayerCard({
     }
   };
 
-  const renderPickerItems = (items: string[]) =>
-    items.map(item => <Picker.Item key={item} label={item} value={item} />);
-
   const lighterBg = lightenColor(getCharacterColor(player.character), 0.8);
 
   return (
@@ -209,27 +206,12 @@ function PlayerCard({
               Character:
             </CustomText>
             <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={''}
-                style={
-                  Platform.OS === 'android' ? styles.pickerAndroid : undefined
-                }
-                itemStyle={styles.pickerItem}
-                enabled={isEditable}
+              <DropdownPicker
+                options={CHARACTERS}
+                selectedValue={player.character}
                 onValueChange={value => updatePlayer({ character: value })}
-              >
-                {/* First option disabled */}
-                <Picker.Item
-                  label="Select a character..."
-                  value=""
-                  enabled={false}
-                />
-
-                {/* Rest of the options */}
-                {CHARACTERS.map(c => (
-                  <Picker.Item key={c} label={c} value={c} />
-                ))}
-              </Picker>
+                disabled={!isEditable}
+              />
             </View>
           </View>
 
@@ -239,17 +221,12 @@ function PlayerCard({
               Escape Pod:
             </CustomText>
             <View style={styles.pickerWrapper}>
-              <Picker
+              <DropdownPicker
+                options={ESCAPE_PODS}
                 selectedValue={player.escapePod}
-                style={
-                  Platform.OS === 'android' ? styles.pickerAndroid : undefined
-                }
-                itemStyle={styles.pickerItem}
-                enabled={isEditable}
                 onValueChange={value => updatePlayer({ escapePod: value })}
-              >
-                {renderPickerItems(ESCAPE_PODS)}
-              </Picker>
+                disabled={!isEditable}
+              />
             </View>
           </View>
 
@@ -423,6 +400,8 @@ const styles = StyleSheet.create({
   value: {
     width: 210,
     height: 60,
+    fontFamily: 'Roboto-Regular',
+    fontSize: 18,
     backgroundColor: '#eee',
     borderRadius: 6,
     paddingHorizontal: 8,

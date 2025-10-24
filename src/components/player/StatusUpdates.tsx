@@ -15,6 +15,8 @@ type StatusUpdatesProps = {
   onUpdate: (newStatuses: Statuses) => void;
 };
 
+const STATUS_ORDER: (keyof Statuses)[] = ['heart', 'star', 'timer-sand-full'];
+
 const StatusUpdates = ({
   statuses,
   isEditable,
@@ -42,7 +44,7 @@ const StatusUpdates = ({
         Status Updates
       </CustomText>
       <View style={styles.statusContainer}>
-        {(Object.keys(statuses) as (keyof Statuses)[]).map(status => (
+        {STATUS_ORDER.map(status => (
           <View key={status} style={styles.statusRow}>
             <MaterialCommunityIcons name={status} size={30} color="black" />
             <View style={styles.statusTrack}>
@@ -63,7 +65,11 @@ const StatusUpdates = ({
             <View style={styles.statusControls}>
               {isEditable && (
                 <Pressable onPress={() => handleStatusChange(status, -1)}>
-                  <MaterialCommunityIcons name="minus" size={30} color="black" />
+                  <MaterialCommunityIcons
+                    name="minus"
+                    size={30}
+                    color="black"
+                  />
                 </Pressable>
               )}
               <CustomText style={styles.statusLevel}>
