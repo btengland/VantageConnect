@@ -400,6 +400,7 @@ const styles = StyleSheet.create({
   value: {
     width: 210,
     height: 60,
+    color: 'black',
     fontFamily: 'Roboto-Regular',
     fontSize: 18,
     backgroundColor: '#eee',
