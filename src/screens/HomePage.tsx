@@ -83,7 +83,7 @@ const HomePage = () => {
       style={styles.background}
       resizeMode="cover"
     >
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="light-content" />
 
       <TouchableOpacity style={styles.discordButton} onPress={openDiscord}>
         <Image source={discordLogo} style={styles.discordLogo} />

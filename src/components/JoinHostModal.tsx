@@ -67,6 +67,7 @@ const JoinHostModal = ({ isOpen, toggleModal }: JoinModalProps) => {
           </CustomText>
 
           <TextInput
+            placeholderTextColor="#888888"
             style={styles.textInput}
             onChangeText={setText}
             value={text}

@@ -31,7 +31,10 @@ const GameHeader = ({
           {isMyTurn && (
             <Pressable
               onPress={() => onDiceChange(-1)}
-              style={styles.diceButton}
+              style={[
+                styles.diceButton,
+                challengeDice === 0 && styles.diceButtonDisabled,
+              ]}
             >
               <CustomText style={styles.diceButtonText}>-</CustomText>
             </Pressable>
@@ -83,6 +86,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  diceButtonDisabled: {
+    backgroundColor: '#666',
   },
   diceButtonText: {
     color: 'white',

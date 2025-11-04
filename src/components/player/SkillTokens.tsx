@@ -49,7 +49,10 @@ const SkillTokens = ({
                 <View style={styles.counterContainer}>
                   {isEditable && (
                     <Pressable
-                      style={styles.tokenButton}
+                      style={[
+                        styles.tokenButton,
+                        token.quantity === 0 && styles.tokenButtonDisabled,
+                      ]}
                       onPress={() => handleTokenChange(token.id, -1)}
                     >
                       <CustomText style={styles.tokenButtonText}>-</CustomText>
@@ -129,6 +132,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#444',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tokenButtonDisabled: {
+    backgroundColor: '#666',
   },
   tokenButtonText: {
     color: 'white',

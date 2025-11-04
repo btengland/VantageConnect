@@ -155,7 +155,7 @@ function PlayerCard({
           {/* Current Turn */}
           {player.turn && player.id === currentPlayerId && (
             <View style={styles.buttonContainer}>
-              <View style={[styles.turnTextContainer, styles.myTurnBackground]}>
+              <View style={styles.turnTextContainer}>
                 <CustomText style={styles.turnText} small bold>
                   It's your turn
                 </CustomText>
@@ -194,6 +194,7 @@ function PlayerCard({
             <TextInput
               style={styles.value}
               value={player.name}
+              placeholderTextColor="#888888"
               placeholder="Enter your name"
               editable={isEditable}
               onChangeText={text => updatePlayer({ name: text })}
@@ -260,6 +261,8 @@ function PlayerCard({
             >
               <TextInput
                 keyboardType="number-pad"
+                placeholderTextColor="#888888"
+                placeholder="000"
                 maxLength={3}
                 style={styles.locationInput}
                 value={player.location}
@@ -352,6 +355,7 @@ function PlayerCard({
               style={styles.journalInput}
               multiline
               value={player.journalText}
+              placeholderTextColor="#888888"
               placeholder="Write your notes here..."
               editable={isEditable}
               onChangeText={text => updatePlayer({ journalText: text })}
@@ -418,8 +422,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   locationInputWrapper: {
-    borderColor: '#025472',
-    borderWidth: 4,
+    backgroundColor: '#eee',
     borderRadius: 6,
     paddingVertical: 14,
     paddingHorizontal: 30,
@@ -428,6 +431,7 @@ const styles = StyleSheet.create({
     width: 90,
     fontSize: 38,
     color: '#025472',
+    fontWeight: 'bold',
     textAlign: 'center',
     paddingVertical: 0,
   },
@@ -458,23 +462,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   turnTextContainer: {
-    backgroundColor: '#f0f4f8',
-    paddingVertical: 8,
-    borderRadius: 12,
+    minWidth: '50%',
     marginBottom: 10,
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    minWidth: '60%',
-  },
-  myTurnBackground: {
-    backgroundColor: '#a5f0a8',
   },
   turnText: {
     textAlign: 'center',
+    color: 'green',
   },
 
   // GRIDS & BOXES

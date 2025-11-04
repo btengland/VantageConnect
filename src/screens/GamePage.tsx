@@ -387,7 +387,7 @@ const GamePage = () => {
 
   return (
     <LinearGradient colors={['#b7c9d0', '#025472']} style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="dark-content" />
 
       <View style={styles.main}>
         {/* Close button top-right */}
