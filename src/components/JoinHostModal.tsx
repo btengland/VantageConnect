@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -10,56 +10,40 @@ import {
 } from 'react-native';
 import { SharedStyles } from './SharedStyles';
 import CustomText from './CustomText';
-import { hostGame, joinGame, wsClient, connectWebSocket } from '../api';
+import { joinGame, connectWebSocket } from '../api';
 
 type GameData = {
   playerId: number;
   sessionCode: number;
 };
 
-type JoinHostModalProps = {
+type JoinModalProps = {
   isOpen: boolean;
   toggleModal: (type: string, data?: GameData) => void;
-  buttonPressed: string;
 };
 
-const JoinHostModal = ({
-  isOpen,
-  toggleModal,
-  buttonPressed,
-}: JoinHostModalProps) => {
+const JoinHostModal = ({ isOpen, toggleModal }: JoinModalProps) => {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleAction = async () => {
+  const handleJoinGame = async () => {
     setLoading(true);
     try {
       await connectWebSocket();
-      let data;
-      if (buttonPressed === 'host') {
-        data = await hostGame();
+      const sessionNumber = Number(text);
+      const data = await joinGame(sessionNumber);
 
-        if ((data as any).action === 'error') return;
-
-        const gameData: GameData = {
-          playerId: data.playerId,
-          sessionCode: data.sessionCode,
-        };
-
-        toggleModal(buttonPressed, gameData);
-      } else {
-        const sessionNumber = Number(text);
-        data = await joinGame(sessionNumber);
-
-        if ((data as any).action === 'error') return;
-
-        const gameData: GameData = {
-          playerId: data.playerId,
-          sessionCode: data.sessionCode,
-        };
-
-        toggleModal(buttonPressed, gameData);
+      if ((data as any).action === 'error') {
+        Alert.alert('Error', 'Failed to join game. Please try again.');
+        return;
       }
+
+      const gameData: GameData = {
+        playerId: data.playerId,
+        sessionCode: data.sessionCode,
+      };
+
+      toggleModal('join', gameData);
     } catch (error: any) {
       console.error('Error:', error);
       Alert.alert('Error', error.message || 'Something went wrong');
@@ -79,33 +63,34 @@ const JoinHostModal = ({
       <View style={SharedStyles.flexCenter}>
         <View style={SharedStyles.modalView}>
           <CustomText style={styles.modalText} bold>
-            {buttonPressed === 'join' ? 'Join' : 'Host'} a Game
+            Join a Game
           </CustomText>
 
-          {buttonPressed === 'join' && (
-            <TextInput
-              style={styles.textInput}
-              onChangeText={setText}
-              value={text}
-              placeholder="Enter six digit code"
-              keyboardType="number-pad"
-              maxLength={6}
-            />
-          )}
+          <TextInput
+            style={styles.textInput}
+            onChangeText={setText}
+            value={text}
+            placeholder="Enter six digit code"
+            keyboardType="number-pad"
+            maxLength={6}
+          />
 
           {loading ? (
             <ActivityIndicator size="large" color="#2196F3" />
           ) : (
             <View style={SharedStyles.buttonContainer}>
-              <Pressable style={styles.button} onPress={() => toggleModal('')}>
+              <Pressable
+                style={SharedStyles.closeButton}
+                onPress={() => toggleModal('')}
+              >
                 <CustomText style={styles.textStyle} small bold>
                   Close
                 </CustomText>
               </Pressable>
 
-              <Pressable style={styles.button} onPress={handleAction}>
+              <Pressable style={styles.button} onPress={handleJoinGame}>
                 <CustomText style={styles.textStyle} small bold>
-                  {buttonPressed === 'join' ? 'Join' : 'Host'} Game
+                  Join Game
                 </CustomText>
               </Pressable>
             </View>

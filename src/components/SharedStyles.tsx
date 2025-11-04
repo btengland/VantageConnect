@@ -35,4 +35,12 @@ export const SharedStyles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 15,
   },
+  closeButton: {
+    backgroundColor: 'gray',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 8,
+    elevation: 2,
+  },
 });

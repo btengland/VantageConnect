@@ -39,9 +39,12 @@ const ExitModal = ({ playerId, isOpen, toggleModal }: ExitModalProps) => {
       title="Are you sure you want to exit?"
     >
       <View style={SharedStyles.buttonContainer}>
-        <Pressable style={styles.button} onPress={() => toggleModal(false)}>
+        <Pressable
+          style={SharedStyles.closeButton}
+          onPress={() => toggleModal(false)}
+        >
           <CustomText style={styles.textStyle} small bold>
-            Close
+            No
           </CustomText>
         </Pressable>
         <Pressable style={styles.button} onPress={handleExit}>
@@ -49,7 +52,7 @@ const ExitModal = ({ playerId, isOpen, toggleModal }: ExitModalProps) => {
             {isLoading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              'Exit'
+              'Yes'
             )}
           </CustomText>
         </Pressable>
