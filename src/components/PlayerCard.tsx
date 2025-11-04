@@ -261,7 +261,7 @@ function PlayerCard({
               <TextInput
                 keyboardType="number-pad"
                 maxLength={3}
-                style={[styles.locationInput, { color: lighterBg }]}
+                style={styles.locationInput}
                 value={player.location}
                 editable={isEditable}
                 onChangeText={text => updatePlayer({ location: text })}
@@ -418,7 +418,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   locationInputWrapper: {
-    backgroundColor: '#025472',
+    borderColor: '#025472',
+    borderWidth: 4,
     borderRadius: 6,
     paddingVertical: 14,
     paddingHorizontal: 30,
@@ -426,8 +427,7 @@ const styles = StyleSheet.create({
   locationInput: {
     width: 90,
     fontSize: 38,
-    fontFamily: 'Roboto-Bold',
-    backgroundColor: 'transparent',
+    color: '#025472',
     textAlign: 'center',
     paddingVertical: 0,
   },
