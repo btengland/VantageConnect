@@ -10,7 +10,8 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import JoinHostModal from '../components/JoinHostModal';
+import JoinHostModal from '../components/JoinModal';
+import InfoModal from '../components/InfoModal';
 import { StatusBar, useColorScheme } from 'react-native';
 import CustomText from '../components/CustomText';
 import { hostGame, connectWebSocket } from '../api';
@@ -22,6 +23,7 @@ type GameData = {
 
 const HomePage = () => {
   const [isOpen, setOpen] = useState(false);
+  const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [buttonPressed, setButtonPressed] = useState('');
 
@@ -72,6 +74,7 @@ const HomePage = () => {
 
   const spaceImage = require('../assets/SpaceImage.jpg');
   const discordLogo = require('../assets/DiscordLogo.png');
+  const helpIcon = require('../assets/Help.png');
 
   const openDiscord = () => {
     Linking.openURL('https://stonemaiergames.com/discord/');
@@ -87,6 +90,13 @@ const HomePage = () => {
 
       <TouchableOpacity style={styles.discordButton} onPress={openDiscord}>
         <Image source={discordLogo} style={styles.discordLogo} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.infoButton}
+        onPress={() => setInfoModalOpen(true)}
+      >
+        <Image source={helpIcon} style={styles.infoIcon} />
       </TouchableOpacity>
 
       <View style={styles.container}>
@@ -123,6 +133,10 @@ const HomePage = () => {
       </View>
 
       <JoinHostModal isOpen={isOpen} toggleModal={toggleModal} />
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setInfoModalOpen(false)}
+      />
     </ImageBackground>
   );
 };
@@ -140,6 +154,17 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   discordLogo: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+  infoButton: {
+    position: 'absolute',
+    top: 55,
+    left: 40,
+    zIndex: 10,
+  },
+  infoIcon: {
     width: 40,
     height: 40,
     resizeMode: 'contain',
