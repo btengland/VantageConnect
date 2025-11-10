@@ -28,7 +28,7 @@ const SkillTokens = ({
   };
 
   return (
-    <View style={{ marginTop: 16 }}>
+    <View style={styles.sectionContainer}>
       <CustomText style={styles.subHeader} small bold>
         Skill Tokens
       </CustomText>
@@ -82,8 +82,13 @@ const SkillTokens = ({
 const styles = StyleSheet.create({
   subHeader: {
     textAlign: 'center',
-    textDecorationLine: 'underline',
-    marginBottom: 6,
+    marginBottom: 12,
+  },
+  sectionContainer: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
   },
   skillTokenGrid: {
     flexDirection: 'row',
@@ -92,10 +97,11 @@ const styles = StyleSheet.create({
   },
   skillTokenBox: {
     width: '48%',
-    backgroundColor: '#eee',
+    borderWidth: 1,
+    borderColor: '#d6d6d6',
     padding: 8,
     marginVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
   },
   iconBox: {
@@ -129,7 +135,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#444',
+    backgroundColor: 'black',
     alignItems: 'center',
     justifyContent: 'center',
   },

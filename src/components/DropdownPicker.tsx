@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Pressable, Modal, FlatList, StyleSheet } from 'react-native';
 import CustomText from './CustomText';
 
@@ -28,7 +28,9 @@ const DropdownPicker = ({
         style={styles.button}
         onPress={() => !disabled && setVisible(true)}
       >
-        <CustomText small>{selectedValue || 'Select...'}</CustomText>
+        <CustomText style={{ color: selectedValue ? '#000' : '#d6d6d6' }} small>
+          {selectedValue || 'Select...'}
+        </CustomText>
       </Pressable>
 
       <Modal visible={visible} transparent animationType="fade">

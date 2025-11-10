@@ -194,7 +194,7 @@ function PlayerCard({
             <TextInput
               style={styles.value}
               value={player.name}
-              placeholderTextColor="#888888"
+              placeholderTextColor="lightgray"
               placeholder="Enter your name"
               editable={isEditable}
               onChangeText={text => updatePlayer({ name: text })}
@@ -232,7 +232,7 @@ function PlayerCard({
           </View>
 
           {/* Current Location */}
-          <View style={styles.locationContainer}>
+          <View style={[styles.locationContainer, styles.sectionContainer]}>
             <CustomText style={styles.subHeader} small bold>
               Current Location
             </CustomText>
@@ -261,7 +261,7 @@ function PlayerCard({
             >
               <TextInput
                 keyboardType="number-pad"
-                placeholderTextColor="#888888"
+                placeholderTextColor="lightgray"
                 placeholder="000"
                 maxLength={3}
                 style={styles.locationInput}
@@ -280,7 +280,7 @@ function PlayerCard({
           />
 
           {/* Impact Dice */}
-          <View style={{ marginTop: 16 }}>
+          <View style={styles.sectionContainer}>
             <CustomText style={styles.subHeader} small bold>
               Impact Dice Slots
             </CustomText>
@@ -347,7 +347,7 @@ function PlayerCard({
           />
 
           {/* Journal */}
-          <View style={{ marginTop: 16 }}>
+          <View style={styles.sectionContainer}>
             <CustomText style={styles.subHeader} small bold>
               Journal
             </CustomText>
@@ -355,7 +355,7 @@ function PlayerCard({
               style={styles.journalInput}
               multiline
               value={player.journalText}
-              placeholderTextColor="#888888"
+              placeholderTextColor="lightgray"
               placeholder="Write your notes here..."
               editable={isEditable}
               onChangeText={text => updatePlayer({ journalText: text })}
@@ -387,8 +387,14 @@ const styles = StyleSheet.create({
   },
   subHeader: {
     textAlign: 'center',
-    textDecorationLine: 'underline',
-    marginBottom: 6,
+    marginBottom: 12,
+  },
+
+  sectionContainer: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
   },
 
   // ROWS
@@ -417,13 +423,13 @@ const styles = StyleSheet.create({
   locationContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
     gap: 6,
     width: '100%',
   },
   locationInputWrapper: {
-    backgroundColor: '#eee',
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d6d6d6',
     paddingVertical: 14,
     paddingHorizontal: 30,
   },
@@ -457,7 +463,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     backgroundColor: '#eee',
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 16,
     alignSelf: 'center',
   },
@@ -517,6 +523,8 @@ const styles = StyleSheet.create({
     height: 300,
     backgroundColor: '#f0f0f0',
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d6d6d6',
     padding: 10,
     fontSize: 14,
     textAlignVertical: 'top',

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import CustomText from '../CustomText';
@@ -39,11 +38,11 @@ const StatusUpdates = ({
   };
 
   return (
-    <View style={{ marginTop: 16 }}>
+    <View style={styles.sectionContainer}>
       <CustomText style={styles.subHeader} small bold>
         Status Updates
       </CustomText>
-      <View style={styles.statusContainer}>
+      <View>
         {STATUS_ORDER.map(status => (
           <View key={status} style={styles.statusRow}>
             <MaterialCommunityIcons name={status} size={30} color="black" />
@@ -91,13 +90,13 @@ const StatusUpdates = ({
 const styles = StyleSheet.create({
   subHeader: {
     textAlign: 'center',
-    textDecorationLine: 'underline',
-    marginBottom: 6,
+    marginBottom: 12,
   },
-  statusContainer: {
-    padding: 10,
+  sectionContainer: {
     backgroundColor: '#f0f0f0',
-    borderRadius: 6,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
   },
   statusRow: {
     flexDirection: 'row',
