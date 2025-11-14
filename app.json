@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "VantageConnect",
-    "slug": "vantageConnect",
+    "slug": "remotevantage",
     "plugins": [
       "expo-font",
       [
@@ -25,6 +25,7 @@
     "updates": {
       "url": "https://u.expo.dev/d46cd9b0-2dfb-4fee-9938-8c2902dfc841"
     },
-    "ios": {}
+    "ios": {},
+    "owner": "btengland"
   }
 }
