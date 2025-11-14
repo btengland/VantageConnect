@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "RemoteVantage",
-    "slug": "remotevantage",
+    "name": "VantageConnect",
+    "slug": "vantageConnect",
     "plugins": [
       "expo-font",
       [
