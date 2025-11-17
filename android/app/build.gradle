@@ -89,9 +89,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.remotevantage'
+    namespace 'com.anonymous.vantageconnect'
     defaultConfig {
-        applicationId 'com.anonymous.remotevantage'
+        applicationId 'com.anonymous.vantageconnect'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 3

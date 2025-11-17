@@ -1,4 +1,4 @@
-package com.anonymous.remotevantage
+package com.anonymous.vantageconnect
 
 import android.os.Build
 import android.os.Bundle
