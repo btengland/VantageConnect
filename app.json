@@ -15,7 +15,7 @@
       ]
     ],
     "android": {
-      "package": "com.anonymous.remotevantage"
+      "package": "com.anonymous.vantageconnect"
     },
     "extra": {
       "eas": {
