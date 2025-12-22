@@ -3,6 +3,14 @@
     "name": "Vantage Connect",
     "slug": "remotevantage",
     "icon": "./src/assets/AppIcon.png",
+
+    "android": {
+      "package": "com.anonymous.remotevantage",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/AppIcon.png"
+      }
+    },
+
     "plugins": [
       "expo-font",
       [
@@ -14,19 +22,8 @@
         }
       ]
     ],
-    "android": {
-      "package": "com.anonymous.remotevantage"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "d46cd9b0-2dfb-4fee-9938-8c2902dfc841"
-      }
-    },
-    "runtimeVersion": "1.0.2",
-    "updates": {
-      "url": "https://u.expo.dev/d46cd9b0-2dfb-4fee-9938-8c2902dfc841"
-    },
-    "ios": {},
+
+    "runtimeVersion": "1.0.5",
     "owner": "btengland"
   }
 }
