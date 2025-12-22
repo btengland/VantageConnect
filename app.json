@@ -3,7 +3,6 @@
     "name": "Vantage Connect",
     "slug": "remotevantage",
     "icon": "./src/assets/AppIcon.png",
-
     "android": {
       "package": "com.anonymous.remotevantage",
       "adaptiveIcon": {
@@ -11,7 +10,6 @@
         "backgroundColor": "#000814"
       }
     },
-
     "plugins": [
       "expo-font",
       [
@@ -23,8 +21,12 @@
         }
       ]
     ],
-
     "runtimeVersion": "1.0.5",
-    "owner": "btengland"
+    "owner": "btengland",
+    "extra": {
+      "eas": {
+        "projectId": "d46cd9b0-2dfb-4fee-9938-8c2902dfc841"
+      }
+    }
   }
 }
